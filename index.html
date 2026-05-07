@@ -731,6 +731,10 @@ function posCardHTML(pos) {
       <span class="pos-timer" data-timer="${pos.symbol}">—</span>
       <span>${ts2date(pos.entry_time)}</span>
     </div>
+    <div class="pos-actions">
+      <button class="pos-action-btn add" onclick="addToPosition('${pos.symbol}')">+ MISE</button>
+      <button class="pos-action-btn close" onclick="forceClose('${pos.symbol}')">FERMER</button>
+    </div>
   `;
 }
 
@@ -1260,6 +1264,35 @@ function initFilters() {
       renderTrades();
     });
   });
+}
+
+// ─── Position actions ──────────────────────────────────────
+
+async function forceClose(symbol) {
+  if (!confirm('Fermer la position ' + symbol.split('/')[0] + ' ?')) return;
+  try {
+    const r = await fetch('/api/close/' + encodeURIComponent(symbol), { method: 'POST' });
+    const d = await r.json();
+    if (d.error) { alert('Erreur : ' + d.error); return; }
+    fetchAll();
+  } catch (e) { alert('Erreur réseau'); }
+}
+
+async function addToPosition(symbol) {
+  const input = prompt('Ajouter combien de USDT à ' + symbol.split('/')[0] + ' ?', '5');
+  if (!input) return;
+  const usdt = parseFloat(input);
+  if (isNaN(usdt) || usdt <= 0) { alert('Montant invalide'); return; }
+  try {
+    const r = await fetch('/api/add/' + encodeURIComponent(symbol), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usdt }),
+    });
+    const d = await r.json();
+    if (d.error) { alert('Erreur : ' + d.error); return; }
+    fetchAll();
+  } catch (e) { alert('Erreur réseau'); }
 }
 
 // ─── Main loop ─────────────────────────────────────────────

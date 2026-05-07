@@ -2,7 +2,7 @@
 #  api.py — Endpoints pour le dashboard multi-paires
 # ═══════════════════════════════════════════════════════════
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -93,6 +93,54 @@ def prices():
 @limiter.limit("30 per minute")
 def health():
     return jsonify({'status': 'ok', 'symbols': len(_prices)})
+
+@app.route('/api/close/<path:symbol>', methods=['POST'])
+@limiter.limit("10 per minute")
+def force_close(symbol):
+    from urllib.parse import unquote
+    from database import save_trade
+    from adaptive import on_trade_closed
+    import ccxt
+    sym = unquote(symbol)
+    if _broker is None:
+        return jsonify({'error': 'Bot non démarré'}), 503
+
+    price = _prices.get(sym)
+    if not price:
+        try:
+            exchange = ccxt.bybit({'enableRateLimit': True})
+            ticker = exchange.fetch_ticker(sym)
+            price = float(ticker['last'])
+        except Exception:
+            pos = _broker.positions.get(sym)
+            if pos:
+                price = pos['entry_price']
+            else:
+                return jsonify({'error': 'Position introuvable'}), 404
+
+    closed = _broker.close_position(sym, price, 'manual')
+    if not closed:
+        return jsonify({'error': 'Position introuvable'}), 404
+    save_trade(closed)
+    on_trade_closed(closed)
+    return jsonify(closed)
+
+@app.route('/api/add/<path:symbol>', methods=['POST'])
+@limiter.limit("10 per minute")
+def add_to_position(symbol):
+    from urllib.parse import unquote
+    sym   = unquote(symbol)
+    if _broker is None:
+        return jsonify({'error': 'Bot non démarré'}), 503
+    body  = request.get_json(silent=True) or {}
+    extra = float(body.get('usdt', 5.0))
+    price = _prices.get(sym)
+    if not price:
+        return jsonify({'error': 'Prix introuvable'}), 404
+    updated = _broker.add_to_position(sym, price, extra)
+    if not updated:
+        return jsonify({'error': 'Position introuvable'}), 404
+    return jsonify(updated)
 
 @app.route('/proxy/kline')
 @limiter.limit("60 per minute")

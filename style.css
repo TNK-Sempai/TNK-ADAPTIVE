@@ -686,6 +686,46 @@
      font-weight: 500;
  }
 
+ /* ── Position Actions ──────────────────────────────────── */
+ .pos-actions {
+     display: flex;
+     gap: 8px;
+     margin-top: 12px;
+     padding-top: 12px;
+     border-top: 1px solid var(--border);
+ }
+
+ .pos-action-btn {
+     flex: 1;
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 9px;
+     letter-spacing: 2px;
+     text-transform: uppercase;
+     padding: 7px 0;
+     border: 1px solid;
+     background: none;
+     cursor: pointer;
+     transition: background .15s;
+ }
+
+ .pos-action-btn.add {
+     color: var(--green);
+     border-color: rgba(61, 220, 132, .3);
+ }
+
+ .pos-action-btn.add:hover {
+     background: rgba(61, 220, 132, .08);
+ }
+
+ .pos-action-btn.close {
+     color: var(--red);
+     border-color: rgba(255, 79, 79, .3);
+ }
+
+ .pos-action-btn.close:hover {
+     background: rgba(255, 79, 79, .08);
+ }
+
  /* ═══════════════════════════════════════════════════════
        SIGNALS
     ═══════════════════════════════════════════════════════ */

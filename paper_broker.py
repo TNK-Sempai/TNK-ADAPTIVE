@@ -118,6 +118,42 @@ class PaperBroker:
             self._persist()
             return trade
 
+    # ── DCA / augmenter la mise ───────────────────────────────
+    def add_to_position(self, symbol: str, price: float, extra_usdt: float) -> dict | None:
+        with self._lock:
+            pos = self.positions.get(symbol)
+            if not pos:
+                return None
+            if self.balance < extra_usdt:
+                extra_usdt = self.balance
+            if extra_usdt <= 0:
+                return None
+
+            total_usdt   = pos['size_usdt']   + extra_usdt
+            total_tokens = pos['size_tokens'] + extra_usdt / price
+            avg_price    = total_usdt / total_tokens
+
+            pos['size_usdt']   = total_usdt
+            pos['size_tokens'] = total_tokens
+            pos['entry_price'] = avg_price
+
+            sl_pct = pos['params_snap'].get('stop_loss_pct',   0.03)
+            tp_pct = pos['params_snap'].get('take_profit_pct', 0.06)
+            if pos['type'] == 'long':
+                pos['stop_loss']   = avg_price * (1 - sl_pct)
+                pos['take_profit'] = avg_price * (1 + tp_pct)
+            else:
+                pos['stop_loss']   = avg_price * (1 + sl_pct)
+                pos['take_profit'] = avg_price * (1 - tp_pct)
+
+            # Réinitialise le trailing stop sur le nouveau prix moyen
+            pos['trailing_active'] = False
+            pos['best_price']      = price
+
+            self.balance -= extra_usdt
+            self._persist()
+            return pos
+
     # ── Trailing stop ─────────────────────────────────────────
     def update_trailing(self, symbol: str, current_price: float):
         with self._lock:
