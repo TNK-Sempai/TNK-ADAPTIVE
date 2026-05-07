@@ -78,6 +78,12 @@ def adapt_log():
     from database import get_adapt_log
     return jsonify(get_adapt_log(50))
 
+@app.route('/api/cooldowns')
+@limiter.limit("30 per minute")
+def cooldowns():
+    from database import get_active_cooldowns
+    return jsonify(get_active_cooldowns())
+
 @app.route('/api/prices')
 @limiter.limit("30 per minute")
 def prices():

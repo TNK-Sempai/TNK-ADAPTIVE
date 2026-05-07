@@ -101,6 +101,7 @@
     <div id="signalsArea">
       <div class="empty">AUCUN SIGNAL DÉTECTÉ CE CYCLE</div>
     </div>
+    <div id="cooldownsArea"></div>
 
     <!-- Mini trades -->
     <div class="section-title">DERNIERS TRADES</div>
@@ -434,6 +435,7 @@ const state = {
   params: [],
   signals: {},
   prices: {},
+  cooldowns: [],
 };
 
 let prevVals      = {};
@@ -513,7 +515,7 @@ async function getJSON(path) {
 
 async function fetchAll() {
   try {
-    const [stats, positions, trades, adaptLog, params, signals, prices] = await Promise.all([
+    const [stats, positions, trades, adaptLog, params, signals, prices, cooldowns] = await Promise.all([
       getJSON('/api/stats'),
       getJSON('/api/positions'),
       getJSON('/api/trades'),
@@ -521,15 +523,17 @@ async function fetchAll() {
       getJSON('/api/params'),
       getJSON('/api/signals'),
       getJSON('/api/prices'),
+      getJSON('/api/cooldowns'),
     ]);
 
-    state.stats     = stats;
-    state.positions = Array.isArray(positions) ? positions : [];
-    state.trades    = Array.isArray(trades)    ? trades    : [];
-    state.adaptLog  = Array.isArray(adaptLog)  ? adaptLog  : [];
-    state.params    = Array.isArray(params)    ? params    : [];
-    state.signals   = signals  || {};
-    state.prices    = prices   || {};
+    state.stats      = stats;
+    state.positions  = Array.isArray(positions)  ? positions  : [];
+    state.trades     = Array.isArray(trades)     ? trades     : [];
+    state.adaptLog   = Array.isArray(adaptLog)   ? adaptLog   : [];
+    state.params     = Array.isArray(params)     ? params     : [];
+    state.signals    = signals   || {};
+    state.prices     = prices    || {};
+    state.cooldowns  = Array.isArray(cooldowns)  ? cooldowns  : [];
 
     setOnline(true);
     renderAll();
@@ -561,6 +565,7 @@ function renderAll() {
   renderKPIs();
   renderPositions();
   renderSignals();
+  renderCooldowns();
   renderMiniTrades();
   renderTrades();
   renderAdapt();
@@ -784,6 +789,34 @@ function startPosTimers() {
 function clearPosTimers() {
   Object.values(posTimers).forEach(t => clearInterval(t));
   posTimers = {};
+}
+
+// ─── Cooldowns ─────────────────────────────────────────────
+
+function renderCooldowns() {
+  const area = document.getElementById('cooldownsArea');
+  if (!area) return;
+  const list = state.cooldowns || [];
+  if (!list.length) {
+    area.innerHTML = '';
+    return;
+  }
+  area.innerHTML =
+    '<div class="section-title" style="margin-top:8px">COOLDOWNS ACTIFS</div>' +
+    '<div class="cooldowns-wrap">' +
+    list.map(c => `
+      <div class="cooldown-card">
+        <span class="cd-sym">❄ ${c.symbol.split('/')[0]}</span>
+        <span class="cd-timer" data-until="${c.until}">${durStr(Date.now() / 1000, c.until)}</span>
+      </div>`
+    ).join('') +
+    '</div>';
+}
+
+function updateCooldownTimers() {
+  document.querySelectorAll('[data-until]').forEach(el => {
+    el.textContent = durStr(Date.now() / 1000, parseFloat(el.dataset.until));
+  });
 }
 
 // ─── Signals ───────────────────────────────────────────────
@@ -1235,6 +1268,7 @@ function startLoop() {
   fetchAll();
   setInterval(fetchAll, 15000);
   setInterval(refreshPrices, 10000);
+  setInterval(updateCooldownTimers, 1000);
 }
 
 // ─── Init ──────────────────────────────────────────────────

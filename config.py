@@ -42,6 +42,9 @@ TP_MIN, TP_MAX = 0.02, 0.20
 TRAILING_ACTIVATION_PCT = 0.015  # S'active à +1.5% de profit
 TRAILING_DISTANCE_PCT   = 0.015  # Suit à -1.5% du meilleur prix
 
+# ── Cooldown post-SL ──────────────────────────────────────
+COOLDOWN_AFTER_SL = 14400  # 4 heures en secondes
+
 # ── Filtre ATR ─────────────────────────────────────────────
 ATR_PERIOD  = 14   # Période de calcul ATR
 MIN_ATR_PCT = 0.8  # Volatilité minimum 0.8% par bougie pour entrer

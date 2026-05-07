@@ -6,7 +6,8 @@ import sqlite3
 import json
 from config import (
     DEFAULT_RSI_PERIOD, DEFAULT_RSI_OVERSOLD, DEFAULT_RSI_OVERBOUGHT,
-    DEFAULT_MA_FAST, DEFAULT_MA_SLOW, DEFAULT_STOP_LOSS_PCT, DEFAULT_TAKE_PROFIT_PCT
+    DEFAULT_MA_FAST, DEFAULT_MA_SLOW, DEFAULT_STOP_LOSS_PCT, DEFAULT_TAKE_PROFIT_PCT,
+    COOLDOWN_AFTER_SL,
 )
 
 DB_PATH = 'bot.db'
@@ -259,7 +260,7 @@ def load_open_positions() -> dict:
         rows = conn.execute('SELECT symbol, data FROM open_positions').fetchall()
         return {r['symbol']: json.loads(r['data']) for r in rows}
 
-def set_cooldown(symbol: str, seconds: int = 3600):
+def set_cooldown(symbol: str, seconds: int = COOLDOWN_AFTER_SL):
     import time
     with get_conn() as conn:
         conn.execute(
@@ -276,6 +277,16 @@ def is_on_cooldown(symbol: str) -> bool:
             'SELECT until FROM cooldown WHERE symbol = ?', (symbol,)
         ).fetchone()
         return row is not None and time.time() < row['until']
+
+def get_active_cooldowns() -> list[dict]:
+    import time
+    now = time.time()
+    with get_conn() as conn:
+        rows = conn.execute(
+            'SELECT symbol, until FROM cooldown WHERE until > ?', (now,)
+        ).fetchall()
+        return [{'symbol': r['symbol'], 'until': r['until'],
+                 'remaining_seconds': int(r['until'] - now)} for r in rows]
 
 def get_global_stats() -> dict:
     with get_conn() as conn:

@@ -51,8 +51,8 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
         emoji = '✅' if closed['win'] else '❌'
         log.info(f'  {emoji} {symbol} [{closed["reason"].upper()}] {closed["pnl"]:+.4f} USDT ({closed["pnl_pct"]:+.2f}%)')
         if closed['reason'] == 'stop_loss':
-            set_cooldown(symbol, seconds=3600)
-            log.info(f'  🔒 {symbol} cooldown 1h (SL touché)')
+            set_cooldown(symbol)
+            log.info(f'  ❄️  [{symbol}] Cooldown 4h activé après SL')
 
     # ── Exit signal ───────────────────────────────────────
     if broker.positions.get(symbol) and not closed:
