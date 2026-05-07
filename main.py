@@ -16,7 +16,7 @@ from market_data    import fetch_ohlcv, calculate_indicators, get_signal, should
 from paper_broker   import PaperBroker
 from database       import init_db, save_trade, get_params, is_on_cooldown, set_cooldown
 from adaptive       import on_trade_closed
-from api            import start_api, update_state
+from api            import start_api, update_state, notify_n8n
 from config         import LOOP_INTERVAL, API_PORT, INITIAL_BALANCE
 
 # ── Logging ───────────────────────────────────────────────
@@ -50,6 +50,16 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
         on_trade_closed(closed)
         emoji = '✅' if closed['win'] else '❌'
         log.info(f'  {emoji} {symbol} [{closed["reason"].upper()}] {closed["pnl"]:+.4f} USDT ({closed["pnl_pct"]:+.2f}%)')
+        if closed['win']:
+            notify_n8n('trade_win', {
+                'symbol': closed['symbol'], 'pnl': closed['pnl'],
+                'pnl_pct': closed['pnl_pct'], 'reason': closed['reason'],
+            })
+        else:
+            notify_n8n('trade_loss', {
+                'symbol': closed['symbol'], 'pnl': closed['pnl'],
+                'pnl_pct': closed['pnl_pct'], 'reason': closed['reason'],
+            })
         if closed['reason'] == 'stop_loss':
             set_cooldown(symbol)
             log.info(f'  ❄️  [{symbol}] Cooldown 4h activé après SL')
@@ -64,6 +74,11 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
                 on_trade_closed(closed)
                 emoji = '✅' if closed['win'] else '❌'
                 log.info(f'  {emoji} {symbol} [SIGNAL EXIT] {closed["pnl"]:+.4f} USDT')
+                event = 'trade_win' if closed['win'] else 'trade_loss'
+                notify_n8n(event, {
+                    'symbol': closed['symbol'], 'pnl': closed['pnl'],
+                    'pnl_pct': closed['pnl_pct'], 'reason': closed['reason'],
+                })
 
     # ── Entry signal ──────────────────────────────────────
     signal = get_signal(df, params)
@@ -82,6 +97,10 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
                 f'@ {price:.6g}  SL:{opened["stop_loss"]:.6g}  TP:{opened["take_profit"]:.6g}  '
                 f'ATR:{atr_pct:.2f}%{trend_info}'
             )
+            notify_n8n('trade_open', {
+                'symbol': symbol, 'direction': signal,
+                'entry_price': opened['entry_price'], 'size_usdt': opened['size_usdt'],
+            })
 
     return signal
 

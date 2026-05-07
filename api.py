@@ -1,12 +1,12 @@
 # ═══════════════════════════════════════════════════════════
 #  api.py — Endpoints pour le dashboard multi-paires
 # ═══════════════════════════════════════════════════════════
-
+from urllib.parse import unquote
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-
+from config import ADMIN_TOKEN
 app  = Flask(__name__)
 CORS(app)
 
@@ -21,6 +21,22 @@ limiter = Limiter(
 _broker  = None
 _prices  = {}
 _signals = {}
+
+def is_admin_request():
+    token = request.headers.get('X-ADMIN-TOKEN')
+    return token == ADMIN_TOKEN
+
+def notify_n8n(event_type: str, data: dict):
+    from config import N8N_WEBHOOK_URL
+    if not N8N_WEBHOOK_URL:
+        return
+    try:
+        import requests as req
+        import time
+        payload = {'event': event_type, 'timestamp': time.time(), **data}
+        req.post(N8N_WEBHOOK_URL, json=payload, timeout=3)
+    except Exception:
+        pass  # Ne jamais bloquer le bot si n8n est down
 
 def update_state(broker, prices, signals):
     global _broker, _prices, _signals
@@ -97,7 +113,9 @@ def health():
 @app.route('/api/close/<path:symbol>', methods=['POST'])
 @limiter.limit("10 per minute")
 def force_close(symbol):
-    from urllib.parse import unquote
+
+    if not is_admin_request():
+        return jsonify({'error': 'Unauthorized'}), 403    
     from database import save_trade
     from adaptive import on_trade_closed
     import ccxt
@@ -128,7 +146,9 @@ def force_close(symbol):
 @app.route('/api/add/<path:symbol>', methods=['POST'])
 @limiter.limit("10 per minute")
 def add_to_position(symbol):
-    from urllib.parse import unquote
+
+    if not is_admin_request():
+        return jsonify({'error': 'Unauthorized'}), 403    
     sym   = unquote(symbol)
     if _broker is None:
         return jsonify({'error': 'Bot non démarré'}), 503

@@ -52,8 +52,14 @@ MIN_ATR_PCT = 0.8  # Volatilité minimum 0.8% par bougie pour entrer
 # ── Filtre tendance MA200 ───────────────────────────────────
 MA200_FILTER = True  # False pour désactiver sans toucher au code
 
+# ── Notifications n8n ─────────────────────────────────────
+N8N_WEBHOOK_URL = ''  # URL du webhook n8n, vide = désactivé
+
 # ── Bot ────────────────────────────────────────────────────
 LOOP_INTERVAL   = 60   # Signaux : toutes les 5 min
 SLTP_INTERVAL   = 15    # SL/TP : toutes les 30 secondes
 API_PORT        = 5000
 OHLCV_LIMIT     = 220   # Nombre de bougies à récupérer par paire (220 pour MA200)
+N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/af7b6b50-6d24-48af-b00d-c07b2935a87f'
+# ── Admin ────────────────────────────────────────────────
+ADMIN_TOKEN = 'TNK_SUPER_SECRET_458921'
