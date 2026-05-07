@@ -14,7 +14,7 @@ SYMBOL_REFRESH_MIN = 60        # Rafraîchir la liste des paires toutes les 60 m
 
 # ── Portfolio paper ────────────────────────────────────────
 INITIAL_BALANCE    = 200.0  # USDT fictif de départ
-MAX_OPEN_POSITIONS = 5         # Pas plus de 5 trades simultanés
+MAX_OPEN_POSITIONS = 8         # Pas plus de 5 trades simultanés
 TRADE_SIZE_PCT     = 0.05      # 5% du portfolio par trade
 
 # ── Paramètres par défaut (avant adaptation) ──────────────

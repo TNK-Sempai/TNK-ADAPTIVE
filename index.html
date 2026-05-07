@@ -210,8 +210,8 @@
           <div class="about-block-icon">🕯</div>
           <div class="about-block-title">Dashboard live</div>
           <div class="about-block-body">
-            Chandelles <strong>TradingView / Lightweight Charts</strong> par position,
-            PnL temps réel, journal d'adaptations et signaux actifs.
+            Chandelles <strong>TradingView</strong>, positions live avec <strong>trailing stop</strong>,
+            fermeture manuelle, DCA sur position, cooldowns actifs.
           </div>
         </div>
       </div>
@@ -355,6 +355,59 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
 ├── .env              # ← NE PAS COMMITER
 ├── .gitignore
 └── README.md</pre>
+      </div>
+
+      <!-- S5 — Fonctionnalités avancées -->
+      <div class="section-title">FONCTIONNALITÉS AVANCÉES</div>
+      <div class="about-grid about-grid-advanced">
+        <div class="about-block">
+          <div class="about-block-icon">🎯</div>
+          <div class="about-block-title">Trailing Stop</div>
+          <div class="about-block-body">
+            Sécurise les gains dès <strong>+1.5% de profit</strong>.
+            Le SL suit le prix automatiquement, jamais en arrière.
+          </div>
+        </div>
+        <div class="about-block">
+          <div class="about-block-icon">❄️</div>
+          <div class="about-block-title">Cooldown SL</div>
+          <div class="about-block-body">
+            <strong>4h de pause</strong> sur une paire après un Stop Loss.
+            Évite de re-rentrer immédiatement sur un mauvais setup.
+          </div>
+        </div>
+        <div class="about-block">
+          <div class="about-block-icon">📊</div>
+          <div class="about-block-title">Filtre ATR</div>
+          <div class="about-block-body">
+            N'entre que si la volatilité dépasse <strong>0.8% / bougie</strong>.
+            Élimine les marchés trop calmes pour atteindre le TP.
+          </div>
+        </div>
+        <div class="about-block">
+          <div class="about-block-icon">📈</div>
+          <div class="about-block-title">Filtre MA200</div>
+          <div class="about-block-body">
+            Ne trade qu'en direction de la <strong>tendance longue</strong>.
+            Long au-dessus de la MA200, Short en dessous.
+          </div>
+        </div>
+        <div class="about-block">
+          <div class="about-block-icon">✋</div>
+          <div class="about-block-title">Contrôle Manuel</div>
+          <div class="about-block-body">
+            Fermeture forcée ou <strong>ajout de mise (DCA)</strong>
+            directement depuis le dashboard en un clic.
+          </div>
+        </div>
+        <div class="about-block">
+          <div class="about-block-icon">🧠</div>
+          <div class="about-block-title">Moteur Adaptatif</div>
+          <div class="about-block-body">
+            Après <strong>10 trades par paire</strong>, ajuste automatiquement
+            RSI, SL et TP selon les performances récentes.
+          </div>
+        </div>
       </div>
 
       <!-- S6 — Roadmap -->

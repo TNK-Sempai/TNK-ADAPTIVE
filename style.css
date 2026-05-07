@@ -1178,6 +1178,15 @@
      font-weight: 700;
  }
 
+ /* ── Advanced Features ────────────────────────────────── */
+ .about-grid-advanced {
+     margin-bottom: 40px;
+ }
+
+ .about-grid-advanced .about-block-icon {
+     font-size: 20px;
+ }
+
  .roadmap-phase {
      display: flex;
      align-items: flex-start;
