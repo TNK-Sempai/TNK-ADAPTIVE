@@ -64,16 +64,4 @@ def get_signal(df: pd.DataFrame, p: dict) -> str | None:
     return None
 
 def should_exit(direction: str, df: pd.DataFrame, p: dict) -> bool:
-    cur = df.iloc[-1]
-    rsi     = cur['rsi']
-    ma_fast = cur['ma_fast']
-    ma_slow = cur['ma_slow']
-
-    if pd.isna(rsi) or pd.isna(ma_fast) or pd.isna(ma_slow):
-        return False
-
-    if direction == 'long':
-        return rsi > p['rsi_overbought'] or ma_fast < ma_slow
-    if direction == 'short':
-        return rsi < p['rsi_oversold'] or ma_fast > ma_slow
     return False

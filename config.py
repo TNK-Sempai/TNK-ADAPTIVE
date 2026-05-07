@@ -4,7 +4,7 @@
 
 # ── Exchange ───────────────────────────────────────────────
 EXCHANGE        = 'bybit'
-TIMEFRAME       = '1h'
+TIMEFRAME       = '15m'
 QUOTE_CURRENCY  = 'USDT'
 
 # ── Filtre de paires ───────────────────────────────────────
@@ -39,7 +39,7 @@ SL_MIN, SL_MAX = 0.01, 0.08
 TP_MIN, TP_MAX = 0.02, 0.20
 
 # ── Bot ────────────────────────────────────────────────────
-LOOP_INTERVAL   = 300   # Signaux : toutes les 5 min
-SLTP_INTERVAL   = 30    # SL/TP : toutes les 30 secondes
+LOOP_INTERVAL   = 60   # Signaux : toutes les 5 min
+SLTP_INTERVAL   = 15    # SL/TP : toutes les 30 secondes
 API_PORT        = 5000
 OHLCV_LIMIT     = 100   # Nombre de bougies à récupérer par paire

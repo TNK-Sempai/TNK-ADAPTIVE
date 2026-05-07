@@ -1290,6 +1290,230 @@
  .roadmap-item.pending { color: var(--muted); }
  .roadmap-check { font-size: 14px; flex-shrink: 0; line-height: 1.5; }
 
+ /* Tableau apprentissage */
+ .about-learn-wrap {
+     margin-bottom: 40px;
+     border: 1px solid var(--border);
+     overflow: hidden;
+ }
+
+ .about-learn-table {
+     width: 100%;
+     border-collapse: collapse;
+ }
+
+ .about-learn-table thead th {
+     background: var(--panel2);
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 8px;
+     letter-spacing: 2px;
+     color: var(--lime);
+     text-align: left;
+     padding: 12px 18px;
+     border-bottom: 1px solid var(--border);
+     text-transform: uppercase;
+ }
+
+ .about-learn-table tbody tr {
+     border-bottom: 1px solid var(--border);
+     transition: background .15s;
+ }
+
+ .about-learn-table tbody tr:hover {
+     background: var(--panel2);
+ }
+
+ .about-learn-table tbody td {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 11px;
+     padding: 11px 18px;
+ }
+
+ .about-learn-table tbody td:first-child {
+     color: var(--muted);
+     width: 38%;
+ }
+
+ /* Warning banners */
+ .warn-banner {
+     background: rgba(255, 79, 79, .08);
+     border-left: 3px solid var(--red);
+     padding: 16px 20px;
+     font-size: 12.5px;
+     color: var(--text);
+     line-height: 1.7;
+     margin-bottom: 28px;
+ }
+
+ .warn-note {
+     background: rgba(255, 79, 79, .06);
+     border-left: 2px solid var(--red);
+     padding: 10px 14px;
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 10px;
+     color: var(--red);
+     letter-spacing: .5px;
+     margin-bottom: 12px;
+ }
+
+ /* Numbered steps */
+ .steps-wrap {
+     display: flex;
+     flex-direction: column;
+     gap: 0;
+     margin-bottom: 40px;
+     border: 1px solid var(--border);
+ }
+
+ .step-item {
+     display: flex;
+     gap: 24px;
+     align-items: flex-start;
+     padding: 28px 32px;
+     border-bottom: 1px solid var(--border);
+     background: var(--panel);
+     transition: background .15s;
+ }
+
+ .step-item:last-child {
+     border-bottom: none;
+ }
+
+ .step-item:hover {
+     background: var(--panel2);
+ }
+
+ .step-num {
+     font-family: 'Bebas Neue', sans-serif;
+     font-size: 2rem;
+     color: var(--lime);
+     line-height: 1;
+     flex-shrink: 0;
+     width: 28px;
+     text-align: center;
+ }
+
+ .step-content {
+     flex: 1;
+     min-width: 0;
+ }
+
+ .step-title {
+     font-family: 'DM Sans', sans-serif;
+     font-size: 14px;
+     font-weight: 600;
+     color: var(--text);
+     margin-bottom: 12px;
+ }
+
+ .step-title code {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 12px;
+     color: var(--lime);
+     background: rgba(200, 240, 96, .08);
+     padding: 1px 6px;
+ }
+
+ .step-body {
+     font-size: 12.5px;
+     color: var(--muted);
+     margin-bottom: 12px;
+     line-height: 1.6;
+ }
+
+ .step-body code {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 11px;
+     color: var(--text);
+ }
+
+ .step-list {
+     list-style: none;
+     margin-bottom: 14px;
+ }
+
+ .step-list li {
+     font-size: 12.5px;
+     color: var(--text);
+     padding-left: 16px;
+     position: relative;
+     margin-bottom: 5px;
+     line-height: 1.6;
+ }
+
+ .step-list li::before {
+     content: '›';
+     position: absolute;
+     left: 0;
+     color: var(--lime);
+     font-weight: 700;
+ }
+
+ /* Code blocks */
+ .code-block {
+     background: var(--panel2);
+     border-left: 2px solid var(--lime);
+     position: relative;
+     margin-bottom: 0;
+ }
+
+ .code-block-header {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     padding: 8px 16px;
+     border-bottom: 1px solid var(--border);
+ }
+
+ .code-lang {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 8px;
+     letter-spacing: 2px;
+     color: var(--muted);
+     text-transform: uppercase;
+ }
+
+ .code-copy-btn {
+     background: none;
+     border: 1px solid var(--border2);
+     color: var(--muted);
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 8px;
+     letter-spacing: 1px;
+     padding: 4px 10px;
+     cursor: pointer;
+     transition: all .15s;
+ }
+
+ .code-copy-btn:hover {
+     border-color: var(--lime);
+     color: var(--lime);
+ }
+
+ .code-copy-btn.copied {
+     border-color: var(--green);
+     color: var(--green);
+ }
+
+ .code-block pre {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 12px;
+     color: var(--text);
+     padding: 16px;
+     overflow-x: auto;
+     line-height: 1.65;
+     white-space: pre;
+ }
+
+ /* Ko-fi sub-label */
+ .kofi-sub {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 9px;
+     color: var(--muted);
+     margin-top: 10px;
+     letter-spacing: 1px;
+ }
+
  .about-disclaimer {
      font-family: 'JetBrains Mono', monospace;
      font-size: 9px;

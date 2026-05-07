@@ -11,6 +11,8 @@ from config import TOP_N_SYMBOLS, MIN_VOLUME_USDT, SYMBOL_REFRESH_MIN, EXCHANGE
 
 log = logging.getLogger('symbols')
 
+BLACKLIST = {'USDC', 'USDT', 'BUSD', 'DAI', 'TUSD', 'FDUSD', 'USDE', 'FRAX', 'LUSD', 'USDP'}
+
 exchange = ccxt.bybit({'enableRateLimit': True})
 
 _symbols_cache     = []
@@ -52,13 +54,17 @@ def get_active_symbols() -> list[str]:
             except Exception as e:
                 log.warning(f'  Batch partiel ignoré: {e}')
 
-        # Filtrer par volume et trier
-        usdt_pairs = [
-            (sym, t)
-            for sym, t in all_tickers.items()
-            if t.get('quoteVolume') is not None
-            and float(t['quoteVolume'] or 0) >= MIN_VOLUME_USDT
-        ]
+        # Filtrer par volume, stablecoins et micro-caps
+        usdt_pairs = []
+        for sym, t in all_tickers.items():
+            if float(t.get('quoteVolume') or 0) < MIN_VOLUME_USDT:
+                continue
+            base = sym.split('/')[0].replace('1000', '')
+            if base in BLACKLIST:
+                continue
+            if float(t.get('last') or 0) < 0.001:
+                continue
+            usdt_pairs.append((sym, t))
 
         usdt_pairs.sort(key=lambda x: float(x[1]['quoteVolume'] or 0), reverse=True)
         top = [sym for sym, _ in usdt_pairs[:TOP_N_SYMBOLS]]

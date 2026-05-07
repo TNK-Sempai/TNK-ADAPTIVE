@@ -84,6 +84,14 @@ def init_db():
                 changes    TEXT NOT NULL   -- JSON des changements
             )
         ''')
+
+        # ── Cooldown post-SL ─────────────────────────────────
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS cooldown (
+                symbol  TEXT PRIMARY KEY,
+                until   REAL NOT NULL
+            )
+        ''')
         conn.commit()
 
 # ── Params par symbole ─────────────────────────────────────
@@ -250,6 +258,24 @@ def load_open_positions() -> dict:
     with get_conn() as conn:
         rows = conn.execute('SELECT symbol, data FROM open_positions').fetchall()
         return {r['symbol']: json.loads(r['data']) for r in rows}
+
+def set_cooldown(symbol: str, seconds: int = 3600):
+    import time
+    with get_conn() as conn:
+        conn.execute(
+            'INSERT INTO cooldown (symbol, until) VALUES (?,?) '
+            'ON CONFLICT(symbol) DO UPDATE SET until = excluded.until',
+            (symbol, time.time() + seconds)
+        )
+        conn.commit()
+
+def is_on_cooldown(symbol: str) -> bool:
+    import time
+    with get_conn() as conn:
+        row = conn.execute(
+            'SELECT until FROM cooldown WHERE symbol = ?', (symbol,)
+        ).fetchone()
+        return row is not None and time.time() < row['until']
 
 def get_global_stats() -> dict:
     with get_conn() as conn:

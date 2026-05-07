@@ -179,9 +179,8 @@
         <div class="about-subtitle">Bot de paper trading multi-paires auto-adaptatif — Tanuki Corporation</div>
       </div>
 
-      <!-- S2 — 4 blocs 2x2 -->
+      <!-- S2 — 4 blocs features -->
       <div class="about-grid">
-
         <div class="about-block">
           <div class="about-block-icon">📡</div>
           <div class="about-block-title">Surveillance temps réel</div>
@@ -190,7 +189,6 @@
             Volume minimum filtré, liste rafraîchie toutes les 60 minutes.
           </div>
         </div>
-
         <div class="about-block">
           <div class="about-block-icon">📈</div>
           <div class="about-block-title">Stratégie RSI + MA</div>
@@ -199,7 +197,6 @@
             de moyennes mobiles. SL et TP calculés par trade.
           </div>
         </div>
-
         <div class="about-block">
           <div class="about-block-icon">🧠</div>
           <div class="about-block-title">Apprentissage adaptatif</div>
@@ -208,7 +205,6 @@
             RSI, SL et TP selon les résultats récents.
           </div>
         </div>
-
         <div class="about-block">
           <div class="about-block-icon">🕯</div>
           <div class="about-block-title">Dashboard live</div>
@@ -217,16 +213,32 @@
             PnL temps réel, journal d'adaptations et signaux actifs.
           </div>
         </div>
-
       </div>
 
-      <!-- S2.5 — Passer en argent réel -->
+      <!-- S3 — Tableau apprentissage -->
+      <div class="section-title">COMMENT FONCTIONNE L'APPRENTISSAGE ?</div>
+      <div class="about-learn-wrap">
+        <table class="about-learn-table">
+          <thead>
+            <tr><th>Condition</th><th>Action automatique</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Win rate &lt; 40%</td><td>RSI rendu plus restrictif — entrées plus rares</td></tr>
+            <tr><td>SL touché &gt; 60% du temps</td><td>Stop Loss élargi</td></tr>
+            <tr><td>TP touché &gt; 60% du temps</td><td>Take Profit augmenté</td></tr>
+            <tr><td>PnL moyen négatif</td><td>Ratio R:R corrigé automatiquement</td></tr>
+            <tr><td>Win rate &gt; 65%</td><td>Paramètres légèrement assouplis</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- S4 — Passer en argent réel -->
       <div class="section-title">PASSER EN ARGENT RÉEL</div>
 
       <div class="warn-banner">
-        ⚠️ <strong>Attention</strong> — Ne passez jamais en réel sans au moins
-        <strong>100 trades paper</strong> avec un win rate stable au-dessus de 55%.
+        ⚠️ <strong>Attention</strong> — Le passage en argent réel comporte des risques de pertes.
         Ne tradez jamais plus que ce que vous pouvez vous permettre de perdre.
+        Attendez un win rate stable sur au moins <strong>100 trades en paper</strong> avant de considérer cela.
       </div>
 
       <div class="steps-wrap">
@@ -236,9 +248,9 @@
           <div class="step-content">
             <div class="step-title">Créer une clé API Bybit</div>
             <ul class="step-list">
-              <li>Bybit → Account → API Management</li>
-              <li>Cocher <strong>Trade</strong> uniquement — ne jamais cocher Withdraw !</li>
-              <li>Noter la clé et le secret dans un endroit sûr</li>
+              <li>Allez dans Bybit → Account → API Management</li>
+              <li>Créez une clé avec permissions <strong>Trade</strong> uniquement (pas de retrait !)</li>
+              <li>Notez la clé et le secret</li>
             </ul>
           </div>
         </div>
@@ -246,8 +258,8 @@
         <div class="step-item">
           <div class="step-num">2</div>
           <div class="step-content">
-            <div class="step-title">Créer le fichier <code>.env</code></div>
-            <div class="warn-note">⚠️ Ne jamais commiter ce fichier — déjà dans le .gitignore</div>
+            <div class="step-title">Créer un fichier <code>.env</code></div>
+            <div class="warn-note">⚠️ Ce fichier ne doit JAMAIS être pushé sur GitHub. Il est déjà dans le .gitignore.</div>
             <div class="code-block">
               <div class="code-block-header">
                 <span class="code-lang">bash</span>
@@ -255,6 +267,7 @@
               </div>
 <pre>BYBIT_API_KEY=votre_cle_ici
 BYBIT_API_SECRET=votre_secret_ici
+INITIAL_BALANCE=200.0
 LIVE_TRADING=true</pre>
             </div>
           </div>
@@ -302,7 +315,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
           <div class="step-num">5</div>
           <div class="step-content">
             <div class="step-title">Activer les vrais ordres dans <code>paper_broker.py</code></div>
-            <div class="step-body">Dans <code>open_position()</code>, si <code>LIVE_TRADING</code> est True :</div>
+            <div class="step-body">Dans <code>open_position()</code>, si <code>LIVE_TRADING</code> est True, remplacez la simulation par :</div>
             <div class="code-block">
               <div class="code-block-header">
                 <span class="code-lang">python</span>
@@ -310,8 +323,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
               </div>
 <pre>if LIVE_TRADING:
     exchange.create_order(
-        symbol, 'market',
-        'buy' if direction == 'long' else 'sell',
+        symbol, 'market', 'buy' if direction=='long' else 'sell',
         token_size
     )</pre>
             </div>
@@ -320,7 +332,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
 
       </div>
 
-      <!-- S2.6 — Structure du projet -->
+      <!-- S5 — Structure du projet -->
       <div class="section-title">STRUCTURE DU PROJET</div>
       <div class="code-block" style="margin-bottom:40px">
         <div class="code-block-header">
@@ -338,12 +350,13 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
 ├── api.py            # Flask + serveur dashboard
 ├── index.html        # Ce dashboard
 ├── style.css         # Styles
+├── assets/           # Logo, images
 ├── .env              # ← NE PAS COMMITER
 ├── .gitignore
 └── README.md</pre>
       </div>
 
-      <!-- S3 — Roadmap -->
+      <!-- S6 — Roadmap -->
       <div class="section-title">ROADMAP</div>
       <div class="about-block about-roadmap">
         <div class="roadmap-list">
@@ -354,24 +367,19 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
           <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Alertes n8n → Discord / Telegram</span></div>
           <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Argent réel (Bybit API)</span></div>
           <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Backtesting historique</span></div>
+          <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Support multi-exchange (Binance, OKX)</span></div>
           <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Docker + VPS</span></div>
         </div>
       </div>
 
-      <!-- S4 — Support -->
+      <!-- S7 — Support -->
       <div class="about-support">
         <div class="about-support-title">Si le bot vous régale 🦝</div>
         <div class="support-cols">
-
           <div class="support-kofi">
-            <a href="https://ko-fi.com/tanukisempai" target="_blank" class="bmc-btn">
-              ☕ BUY ME A COFFEE
-            </a>
-            <div class="kofi-sub mono" style="font-size:9px;color:var(--muted);margin-top:10px;letter-spacing:1px">
-              ko-fi.com/tanukisempai
-            </div>
+            <a href="https://ko-fi.com/tanukisempai" target="_blank" class="bmc-btn">☕ BUY ME A COFFEE</a>
+            <div class="kofi-sub mono" style="font-size:9px;color:var(--muted);margin-top:10px;letter-spacing:1px">ko-fi.com/tanukisempai</div>
           </div>
-
           <div class="wallets-list">
             <div class="wallet-section">
               <div class="wallet-label">ETH / ERC-20</div>
@@ -395,14 +403,14 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- S5 — Disclaimer -->
+      <!-- S8 — Disclaimer -->
       <div class="about-disclaimer">
-        ⚠️ Projet éducatif uniquement. Ne constitue pas un conseil financier.<br>
-        Tanuki Corporation décline toute responsabilité en cas de pertes.<br>
+        ⚠️ Projet éducatif uniquement. Ne constitue pas un conseil financier ou d'investissement.<br>
+        Tanuki Corporation et ses contributeurs déclinent toute responsabilité en cas de pertes financières.<br>
+        Les performances du bot en paper trading ne garantissent pas des performances identiques en conditions réelles.<br>
         Tradez avec votre propre jugement.
       </div>
 
@@ -429,15 +437,13 @@ const state = {
 };
 
 let prevVals      = {};
-let charts        = {};      // symbol → { chart, series }
-let posTimers     = {};      // symbol → intervalId
+let charts        = {};
+let posTimers     = {};
 let activeTab     = 'overview';
 let tradeFilter   = 'all';
 let symFilter     = 'all';
 let isOnline      = true;
-let chartsInitialized = false; // true after first Charts tab click
-
-// ─── Grain ─────────────────────────────────────────────────
+let chartsInitialized = false;
 
 // ─── Utils ─────────────────────────────────────────────────
 
@@ -478,8 +484,6 @@ function durStr(start, end) {
 }
 
 function toBybitSymbol(symbol) {
-  // "BTC/USDT:USDT" → "BTCUSDT"
-  // "ATH/USDT"      → "ATHUSDT"
   return symbol.split(':')[0].replace('/', '');
 }
 
@@ -529,7 +533,6 @@ async function fetchAll() {
 
     setOnline(true);
     renderAll();
-    // Charts only update if already initialized (tab was visited at least once)
     if (chartsInitialized && activeTab === 'charts') renderCharts();
 
   } catch (e) {
@@ -565,13 +568,12 @@ function renderAll() {
   updateTabCounts();
 }
 
-// ─── KPIs ───────────────────────────────────────────────────
+// ─── KPIs ──────────────────────────────────────────────────
 
 function renderKPIs() {
   const s = state.stats;
   if (!s) return;
 
-  // Equity
   const eq = f(s.equity, 2);
   maybeFlash('equity', eq, 'kpi0');
   const eEl = document.getElementById('kEquity');
@@ -579,7 +581,6 @@ function renderKPIs() {
   eEl.className = 'kpi-value' + (s.equity > s.initial_balance ? ' pos' : s.equity < s.initial_balance ? ' neg' : '');
   document.getElementById('kCash').textContent = `Cash: ${f(s.cash)} USDT`;
 
-  // PnL
   const pnlV = pnlStr(s.total_pnl, 4);
   maybeFlash('pnl', pnlV, 'kpi1');
   const pEl = document.getElementById('kPnl');
@@ -587,27 +588,23 @@ function renderKPIs() {
   pEl.className = 'kpi-value' + (s.total_pnl > 0 ? ' pos' : s.total_pnl < 0 ? ' neg' : '');
   document.getElementById('kUpnl').textContent = `Non réalisé: ${pnlStr(s.unrealized_pnl, 4)} USDT`;
 
-  // Win rate
   const wrV = f(s.win_rate, 1) + '%';
   maybeFlash('wr', wrV, 'kpi2');
   document.getElementById('kWR').textContent = wrV;
   document.getElementById('wrFill').style.width = Math.min(100, s.win_rate) + '%';
   document.getElementById('kReturn').textContent = `Retour: ${pct(s.return_pct)}`;
 
-  // Trades W/L
   const wlV = `${s.wins} / ${s.losses}`;
   maybeFlash('wl', wlV, 'kpi3');
   document.getElementById('kWL').textContent = wlV;
   document.getElementById('kTotal').textContent = `Total: ${s.total_trades} trades`;
 
-  // Positions / DD
   const posV = String(s.open_positions);
   maybeFlash('posdd', posV, 'kpi4');
   document.getElementById('kPos').textContent = posV;
   document.getElementById('kDD').textContent = `Max DD: ${f(s.max_drawdown_pct, 2)}%`;
   document.getElementById('posCountBadge').textContent = s.open_positions;
 
-  // Header
   document.getElementById('hdrEquity').textContent = f(s.equity, 2) + ' USDT';
   const retEl = document.getElementById('hdrReturn');
   retEl.textContent = pct(s.return_pct);
@@ -684,7 +681,6 @@ function posCardHTML(pos) {
         <div class="pos-pnl-pct c-muted" data-pnlpct="${pos.symbol}">${pct(pnlPctV)}</div>
       </div>
     </div>
-
     <div class="pos-prices">
       <div class="pos-price-item">
         <div class="pos-price-lbl">ENTRY</div>
@@ -699,7 +695,6 @@ function posCardHTML(pos) {
         <div class="pos-price-val">${f(pos.size_usdt, 1)} USDT</div>
       </div>
     </div>
-
     <div class="pos-prices" style="margin-top:-2px">
       <div class="pos-price-item">
         <div class="pos-price-lbl">STOP LOSS</div>
@@ -714,7 +709,6 @@ function posCardHTML(pos) {
         <div class="pos-price-val">${f(pos.size_tokens, 6)}</div>
       </div>
     </div>
-
     <div class="pos-progress">
       <div class="pos-bar-labels">
         <span class="lbl-sl">SL</span>
@@ -725,7 +719,6 @@ function posCardHTML(pos) {
       </div>
       <div class="pos-cursor" style="left:${prog.cursor}%" data-cur-dot="${pos.symbol}"></div>
     </div>
-
     <div class="pos-footer">
       <span class="pos-timer" data-timer="${pos.symbol}">—</span>
       <span>${ts2date(pos.entry_time)}</span>
@@ -817,7 +810,6 @@ function renderCharts() {
 
   const currentSyms = state.positions.map(p => p.symbol);
 
-  // Remove stale charts
   Object.keys(charts).forEach(sym => {
     if (!currentSyms.includes(sym)) {
       try { charts[sym].chart.remove(); } catch (e) {}
@@ -827,7 +819,6 @@ function renderCharts() {
     }
   });
 
-  // Add new / update existing
   state.positions.forEach(pos => {
     if (!charts[pos.symbol]) {
       const card = buildChartCard(pos);
@@ -886,11 +877,7 @@ async function initChart(pos) {
   if (!container) return;
 
   const w = container.clientWidth;
-  if (w === 0) {
-    console.warn(`[TNK] initChart: container width=0 for ${pos.symbol} — tab not visible?`);
-    return;
-  }
-  console.log(`[TNK] initChart ${pos.symbol} w=${w}`);
+  if (w === 0) return;
 
   const chart = LightweightCharts.createChart(container, {
     width:  w,
@@ -916,14 +903,12 @@ async function initChart(pos) {
     wickDownColor:   '#ff4f4f',
   });
 
-  // Price lines
   series.createPriceLine({ price: pos.entry_price, color: '#c8f060', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,  title: 'ENTRY', axisLabelVisible: true });
   series.createPriceLine({ price: pos.stop_loss,   color: '#ff4f4f', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'SL',    axisLabelVisible: true });
   series.createPriceLine({ price: pos.take_profit, color: '#3ddc84', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'TP',    axisLabelVisible: true });
 
   charts[pos.symbol] = { chart, series };
 
-  // Resize
   const ro = new ResizeObserver(() => {
     if (container.clientWidth > 0) chart.applyOptions({ width: container.clientWidth });
   });
@@ -940,14 +925,10 @@ async function fetchKlines(symbol) {
       const res  = await fetch(url);
       const data = await res.json();
       if (data.result?.list?.length > 0) {
-        console.log(`[TNK] ${sym} — ${data.result.list.length} candles (${cat})`);
         return { list: data.result.list, category: cat };
       }
-    } catch (e) {
-      console.error(`[TNK] proxy kline error ${cat} ${sym}:`, e);
-    }
+    } catch (e) {}
   }
-  console.error(`[TNK] fetchKlines: no data for ${symbol}`);
   return { list: [], category: null };
 }
 
@@ -955,7 +936,6 @@ async function loadCandles(symbol, series) {
   const { list, category } = await fetchKlines(symbol);
   if (!list.length) return;
 
-  // Bybit returns newest-first — reverse before passing to Lightweight Charts
   const candles = list.reverse().map(k => ({
     time:  parseInt(k[0]) / 1000,
     open:  parseFloat(k[1]),
@@ -985,9 +965,7 @@ async function updateChartCandles() {
         low:   parseFloat(k[3]),
         close: parseFloat(k[4]),
       });
-    } catch (e) {
-      console.error('[TNK] updateChartCandles error for', sym, e);
-    }
+    } catch (e) {}
   }
 }
 
@@ -996,14 +974,13 @@ function destroyAllCharts() {
   charts = {};
 }
 
-// ─── Ticker ─────────────────────────────────────────────────
+// ─── Ticker ────────────────────────────────────────────────
 
 function renderTicker() {
   const ticker  = document.getElementById('headerTicker');
   const entries = Object.entries(state.prices || {}).slice(0, 14);
   if (!entries.length) return;
 
-  // Update existing items or rebuild
   const existing = {};
   ticker.querySelectorAll('.ticker-item').forEach(el => {
     const sym = el.dataset.sym;
@@ -1063,9 +1040,9 @@ function renderTrades() {
 
 function filteredTrades() {
   return state.trades.filter(t => {
-    if (tradeFilter === 'win'   && !t.win)           return false;
-    if (tradeFilter === 'loss'  &&  t.win)           return false;
-    if (tradeFilter === 'long'  && t.type !== 'long') return false;
+    if (tradeFilter === 'win'   && !t.win)            return false;
+    if (tradeFilter === 'loss'  &&  t.win)            return false;
+    if (tradeFilter === 'long'  && t.type !== 'long')  return false;
     if (tradeFilter === 'short' && t.type !== 'short') return false;
     if (symFilter !== 'all'     && t.symbol !== symFilter) return false;
     return true;
@@ -1073,11 +1050,11 @@ function filteredTrades() {
 }
 
 function tradeRow(t, mini) {
-  const winCls  = t.win ? 'win' : 'loss';
-  const pnlCls  = t.pnl >= 0 ? 'c-green' : 'c-red';
-  const reason  = (t.reason || 'signal').toLowerCase().replace(' ', '_');
+  const winCls      = t.win ? 'win' : 'loss';
+  const pnlCls      = t.pnl >= 0 ? 'c-green' : 'c-red';
+  const reason      = (t.reason || 'signal').toLowerCase().replace(' ', '_');
   const reasonLabel = t.reason || 'signal';
-  const sym     = (t.symbol || '').split('/')[0];
+  const sym         = (t.symbol || '').split('/')[0];
 
   if (mini) return `
     <tr class="${winCls}">
@@ -1112,11 +1089,10 @@ function buildSymFilters() {
   const wrap = document.getElementById('symFilters');
   const syms = [...new Set(state.trades.map(t => t.symbol).filter(Boolean))];
 
-  // Add new symbol buttons
   syms.forEach(sym => {
     if (wrap.querySelector(`[data-sym="${sym}"]`)) return;
     const btn = document.createElement('button');
-    btn.className  = 'filter-btn';
+    btn.className   = 'filter-btn';
     btn.dataset.sym = sym;
     btn.textContent = sym.split('/')[0];
     btn.onclick = () => {
@@ -1172,15 +1148,7 @@ function renderAdapt() {
   }).join('');
 }
 
-// ─── About — copy wallet ───────────────────────────────────
-
-function copyAddr(btn, addr) {
-  navigator.clipboard.writeText(addr).then(() => {
-    btn.textContent = 'COPIÉ ✓';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => {});
-}
+// ─── Copy helpers ──────────────────────────────────────────
 
 function copyCode(btn) {
   const pre = btn.closest('.code-block').querySelector('pre');
@@ -1188,6 +1156,14 @@ function copyCode(btn) {
     btn.textContent = 'COPIÉ ✓';
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'COPIER'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {});
+}
+
+function copyAddr(btn, addr) {
+  navigator.clipboard.writeText(addr).then(() => {
+    btn.textContent = 'COPIÉ ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => {});
 }
 
@@ -1214,11 +1190,9 @@ function initTabs() {
 
       if (tab === 'charts') {
         if (!chartsInitialized) {
-          // First visit: tab is now visible, containers have real width
           chartsInitialized = true;
           setTimeout(() => renderCharts(), 20);
         } else {
-          // Already initialized: sync widths (ResizeObserver may have missed)
           setTimeout(() => {
             Object.entries(charts).forEach(([sym, c]) => {
               const el = document.getElementById(`cw-${toBybitSymbol(sym)}`);

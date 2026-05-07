@@ -13,7 +13,7 @@ import concurrent.futures
 from symbol_manager import get_active_symbols, get_ticker_prices
 from market_data    import fetch_ohlcv, calculate_indicators, get_signal, should_exit
 from paper_broker   import PaperBroker
-from database       import init_db, save_trade, get_params
+from database       import init_db, save_trade, get_params, is_on_cooldown, set_cooldown
 from adaptive       import on_trade_closed
 from api            import start_api, update_state
 from config         import LOOP_INTERVAL, API_PORT, INITIAL_BALANCE
@@ -45,6 +45,9 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
         on_trade_closed(closed)
         emoji = '✅' if closed['win'] else '❌'
         log.info(f'  {emoji} {symbol} [{closed["reason"].upper()}] {closed["pnl"]:+.4f} USDT ({closed["pnl_pct"]:+.2f}%)')
+        if closed['reason'] == 'stop_loss':
+            set_cooldown(symbol, seconds=3600)
+            log.info(f'  🔒 {symbol} cooldown 1h (SL touché)')
 
     # ── Exit signal ───────────────────────────────────────
     if broker.positions.get(symbol) and not closed:
@@ -60,6 +63,8 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
     # ── Entry signal ──────────────────────────────────────
     signal = get_signal(df, params)
     if signal and symbol not in broker.positions:
+        if is_on_cooldown(symbol):
+            return signal
         opened = broker.open_position(symbol, signal, price, params)
         if opened:
             arrow = '📈' if signal == 'long' else '📉'
