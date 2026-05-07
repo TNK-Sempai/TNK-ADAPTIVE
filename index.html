@@ -676,7 +676,10 @@ function posCardHTML(pos) {
         <div class="pos-full-sym">${pos.symbol}</div>
       </div>
       <div class="pos-right-top">
-        <div class="pos-badge ${pos.type}">${pos.type.toUpperCase()}</div>
+        <div style="display:flex;gap:4px;justify-content:flex-end;align-items:center;margin-bottom:2px">
+          <div class="pos-badge ${pos.type}">${pos.type.toUpperCase()}</div>
+          <div class="pos-badge trailing" data-trail="${pos.symbol}"${pos.trailing_active ? '' : ' style="display:none"'}>TRAILING</div>
+        </div>
         <div class="pos-pnl ${pnl >= 0 ? 'pos' : 'neg'}" data-pnl="${pos.symbol}">${pnlStr(pnl, 4)}</div>
         <div class="pos-pnl-pct c-muted" data-pnlpct="${pos.symbol}">${pct(pnlPctV)}</div>
       </div>
@@ -698,7 +701,7 @@ function posCardHTML(pos) {
     <div class="pos-prices" style="margin-top:-2px">
       <div class="pos-price-item">
         <div class="pos-price-lbl">STOP LOSS</div>
-        <div class="pos-price-val sl-val">${fp(pos.stop_loss)}</div>
+        <div class="pos-price-val sl-val" data-sl="${pos.symbol}">${fp(pos.stop_loss)}</div>
       </div>
       <div class="pos-price-item">
         <div class="pos-price-lbl">TAKE PROFIT</div>
@@ -741,6 +744,12 @@ function updatePosCardValues(pos) {
 
   const curEl = document.querySelector(`[data-cur="${pos.symbol}"]`);
   if (curEl) curEl.textContent = fp(pos.current_price);
+
+  const slEl = document.querySelector(`[data-sl="${pos.symbol}"]`);
+  if (slEl) slEl.textContent = fp(pos.stop_loss);
+
+  const trailEl = document.querySelector(`[data-trail="${pos.symbol}"]`);
+  if (trailEl) trailEl.style.display = pos.trailing_active ? '' : 'none';
 
   const prog  = calcProgress(pos);
   const track = document.querySelector(`[data-track="${pos.symbol}"] .pos-fill`);

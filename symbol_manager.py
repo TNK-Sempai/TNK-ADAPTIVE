@@ -11,7 +11,10 @@ from config import TOP_N_SYMBOLS, MIN_VOLUME_USDT, SYMBOL_REFRESH_MIN, EXCHANGE
 
 log = logging.getLogger('symbols')
 
-BLACKLIST = {'USDC', 'USDT', 'BUSD', 'DAI', 'TUSD', 'FDUSD', 'USDE', 'FRAX', 'LUSD', 'USDP'}
+BLACKLIST = {
+    'USDC', 'BUSD', 'DAI', 'TUSD', 'FDUSD',
+    'USDE', 'FRAX', 'LUSD', 'USDP', 'PYUSD', 'USDD'
+}
 
 exchange = ccxt.bybit({'enableRateLimit': True})
 

@@ -6,7 +6,10 @@
 import time
 import threading
 import logging
-from config import INITIAL_BALANCE, TRADE_SIZE_PCT, MAX_OPEN_POSITIONS
+from config import (
+    INITIAL_BALANCE, TRADE_SIZE_PCT, MAX_OPEN_POSITIONS,
+    TRAILING_ACTIVATION_PCT, TRAILING_DISTANCE_PCT,
+)
 from database import (
     save_portfolio_state, load_portfolio_state,
     save_open_positions, load_open_positions,
@@ -59,14 +62,16 @@ class PaperBroker:
                 tp = price * (1 - tp_pct)
 
             pos = {
-                'symbol':      symbol,
-                'type':        direction,
-                'entry_price': price,
-                'size_tokens': token_size,
-                'size_usdt':   usdt_size,
-                'stop_loss':   sl,
-                'take_profit': tp,
-                'entry_time':  time.time(),
+                'symbol':          symbol,
+                'type':            direction,
+                'entry_price':     price,
+                'size_tokens':     token_size,
+                'size_usdt':       usdt_size,
+                'stop_loss':       sl,
+                'take_profit':     tp,
+                'entry_time':      time.time(),
+                'trailing_active': False,
+                'best_price':      price,
                 'params_snap': {k: params[k] for k in
                     ['rsi_oversold', 'rsi_overbought', 'stop_loss_pct', 'take_profit_pct']},
             }
@@ -113,8 +118,59 @@ class PaperBroker:
             self._persist()
             return trade
 
+    # ── Trailing stop ─────────────────────────────────────────
+    def update_trailing(self, symbol: str, current_price: float):
+        with self._lock:
+            pos = self.positions.get(symbol)
+            if not pos:
+                return
+
+            # Compatibility: positions restored from DB without trailing fields
+            if 'trailing_active' not in pos:
+                pos['trailing_active'] = False
+                pos['best_price'] = pos['entry_price']
+
+            direction = pos['type']
+            entry = pos['entry_price']
+
+            # Track the most favourable price seen
+            if direction == 'long':
+                if current_price > pos['best_price']:
+                    pos['best_price'] = current_price
+            else:
+                if current_price < pos['best_price']:
+                    pos['best_price'] = current_price
+
+            # Activate once profit exceeds threshold
+            if direction == 'long':
+                profit_pct = (current_price - entry) / entry
+            else:
+                profit_pct = (entry - current_price) / entry
+
+            if profit_pct >= TRAILING_ACTIVATION_PCT:
+                pos['trailing_active'] = True
+
+            # Move the SL only when trailing is active, and only in the winning direction
+            if pos['trailing_active']:
+                sl_changed = False
+                if direction == 'long':
+                    trailing_sl = pos['best_price'] * (1 - TRAILING_DISTANCE_PCT)
+                    if trailing_sl > pos['stop_loss']:
+                        pos['stop_loss'] = trailing_sl
+                        sl_changed = True
+                else:
+                    trailing_sl = pos['best_price'] * (1 + TRAILING_DISTANCE_PCT)
+                    if trailing_sl < pos['stop_loss']:
+                        pos['stop_loss'] = trailing_sl
+                        sl_changed = True
+
+                if sl_changed:
+                    self._persist()
+
     # ── SL / TP check ────────────────────────────────────────
     def check_sl_tp(self, symbol: str, price: float) -> dict | None:
+        self.update_trailing(symbol, price)
+
         pos = self.positions.get(symbol)
         if not pos:
             return None
@@ -184,7 +240,9 @@ class PaperBroker:
                 upnl = (pos['entry_price'] - price) / pos['entry_price'] * pos['size_usdt']
             result.append({
                 **pos,
-                'current_price':  price,
-                'unrealized_pnl': round(upnl, 6),
+                'current_price':   price,
+                'unrealized_pnl':  round(upnl, 6),
+                'trailing_active': pos.get('trailing_active', False),
+                'best_price':      pos.get('best_price', pos['entry_price']),
             })
         return result

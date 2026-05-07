@@ -547,6 +547,14 @@
      background: rgba(255, 79, 79, .05);
  }
 
+ .pos-badge.trailing {
+     color: var(--orange);
+     border-color: rgba(255, 140, 66, .35);
+     background: rgba(255, 140, 66, .08);
+     font-size: 10px;
+     letter-spacing: 1.5px;
+ }
+
  .pos-pnl {
      font-family: 'Bebas Neue', sans-serif;
      font-size: 28px;

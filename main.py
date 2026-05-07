@@ -9,6 +9,7 @@ import time
 import threading
 import logging
 import concurrent.futures
+import pandas as pd
 
 from symbol_manager import get_active_symbols, get_ticker_prices
 from market_data    import fetch_ohlcv, calculate_indicators, get_signal, should_exit
@@ -37,6 +38,10 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
         return None
 
     df = calculate_indicators(df, params)
+
+    last    = df.iloc[-1]
+    atr_pct = (last['atr'] / last['close'] * 100) if last['close'] else 0.0
+    ma200   = last.get('ma200')
 
     # ── SL / TP ───────────────────────────────────────────
     closed = broker.check_sl_tp(symbol, price)
@@ -68,9 +73,14 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
         opened = broker.open_position(symbol, signal, price, params)
         if opened:
             arrow = '📈' if signal == 'long' else '📉'
+            trend_info = (
+                f'  MA200:{ma200:.6g} {"↑" if price > ma200 else "↓"}'
+                if pd.notna(ma200) else ''
+            )
             log.info(
                 f'  {arrow} {symbol} [{signal.upper()}] '
-                f'@ {price:.6g}  SL:{opened["stop_loss"]:.6g}  TP:{opened["take_profit"]:.6g}'
+                f'@ {price:.6g}  SL:{opened["stop_loss"]:.6g}  TP:{opened["take_profit"]:.6g}  '
+                f'ATR:{atr_pct:.2f}%{trend_info}'
             )
 
     return signal

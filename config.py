@@ -38,8 +38,19 @@ RSI_OVERBOUGHT_MIN, RSI_OVERBOUGHT_MAX = 55, 80
 SL_MIN, SL_MAX = 0.01, 0.08
 TP_MIN, TP_MAX = 0.02, 0.20
 
+# ── Trailing stop ─────────────────────────────────────────
+TRAILING_ACTIVATION_PCT = 0.015  # S'active à +1.5% de profit
+TRAILING_DISTANCE_PCT   = 0.015  # Suit à -1.5% du meilleur prix
+
+# ── Filtre ATR ─────────────────────────────────────────────
+ATR_PERIOD  = 14   # Période de calcul ATR
+MIN_ATR_PCT = 0.8  # Volatilité minimum 0.8% par bougie pour entrer
+
+# ── Filtre tendance MA200 ───────────────────────────────────
+MA200_FILTER = True  # False pour désactiver sans toucher au code
+
 # ── Bot ────────────────────────────────────────────────────
 LOOP_INTERVAL   = 60   # Signaux : toutes les 5 min
 SLTP_INTERVAL   = 15    # SL/TP : toutes les 30 secondes
 API_PORT        = 5000
-OHLCV_LIMIT     = 100   # Nombre de bougies à récupérer par paire
+OHLCV_LIMIT     = 220   # Nombre de bougies à récupérer par paire (220 pour MA200)
