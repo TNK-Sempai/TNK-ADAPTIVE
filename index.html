@@ -220,6 +220,129 @@
 
       </div>
 
+      <!-- S2.5 — Passer en argent réel -->
+      <div class="section-title">PASSER EN ARGENT RÉEL</div>
+
+      <div class="warn-banner">
+        ⚠️ <strong>Attention</strong> — Ne passez jamais en réel sans au moins
+        <strong>100 trades paper</strong> avec un win rate stable au-dessus de 55%.
+        Ne tradez jamais plus que ce que vous pouvez vous permettre de perdre.
+      </div>
+
+      <div class="steps-wrap">
+
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div class="step-content">
+            <div class="step-title">Créer une clé API Bybit</div>
+            <ul class="step-list">
+              <li>Bybit → Account → API Management</li>
+              <li>Cocher <strong>Trade</strong> uniquement — ne jamais cocher Withdraw !</li>
+              <li>Noter la clé et le secret dans un endroit sûr</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div class="step-content">
+            <div class="step-title">Créer le fichier <code>.env</code></div>
+            <div class="warn-note">⚠️ Ne jamais commiter ce fichier — déjà dans le .gitignore</div>
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-lang">bash</span>
+                <button class="code-copy-btn" onclick="copyCode(this)">COPIER</button>
+              </div>
+<pre>BYBIT_API_KEY=votre_cle_ici
+BYBIT_API_SECRET=votre_secret_ici
+LIVE_TRADING=true</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">3</div>
+          <div class="step-content">
+            <div class="step-title">Modifier <code>config.py</code></div>
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-lang">python</span>
+                <button class="code-copy-btn" onclick="copyCode(this)">COPIER</button>
+              </div>
+<pre>import os
+from dotenv import load_dotenv
+load_dotenv()
+
+LIVE_TRADING     = os.getenv('LIVE_TRADING', 'false') == 'true'
+BYBIT_API_KEY    = os.getenv('BYBIT_API_KEY', '')
+BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">4</div>
+          <div class="step-content">
+            <div class="step-title">Modifier <code>market_data.py</code></div>
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-lang">python</span>
+                <button class="code-copy-btn" onclick="copyCode(this)">COPIER</button>
+              </div>
+<pre>exchange = ccxt.bybit({
+    'apiKey':          BYBIT_API_KEY,
+    'secret':          BYBIT_API_SECRET,
+    'enableRateLimit': True,
+})</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">5</div>
+          <div class="step-content">
+            <div class="step-title">Activer les vrais ordres dans <code>paper_broker.py</code></div>
+            <div class="step-body">Dans <code>open_position()</code>, si <code>LIVE_TRADING</code> est True :</div>
+            <div class="code-block">
+              <div class="code-block-header">
+                <span class="code-lang">python</span>
+                <button class="code-copy-btn" onclick="copyCode(this)">COPIER</button>
+              </div>
+<pre>if LIVE_TRADING:
+    exchange.create_order(
+        symbol, 'market',
+        'buy' if direction == 'long' else 'sell',
+        token_size
+    )</pre>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- S2.6 — Structure du projet -->
+      <div class="section-title">STRUCTURE DU PROJET</div>
+      <div class="code-block" style="margin-bottom:40px">
+        <div class="code-block-header">
+          <span class="code-lang">text</span>
+          <button class="code-copy-btn" onclick="copyCode(this)">COPIER</button>
+        </div>
+<pre>TNK-ADAPTIVE/
+├── main.py           # Boucle principale
+├── config.py         # Paramètres centraux
+├── symbol_manager.py # Top 50 paires USDT
+├── market_data.py    # OHLCV + indicateurs
+├── paper_broker.py   # Broker fictif / réel
+├── adaptive.py       # Moteur d'apprentissage
+├── database.py       # Persistance SQLite
+├── api.py            # Flask + serveur dashboard
+├── index.html        # Ce dashboard
+├── style.css         # Styles
+├── .env              # ← NE PAS COMMITER
+├── .gitignore
+└── README.md</pre>
+      </div>
+
       <!-- S3 — Roadmap -->
       <div class="section-title">ROADMAP</div>
       <div class="about-block about-roadmap">
@@ -1056,6 +1179,15 @@ function copyAddr(btn, addr) {
     btn.textContent = 'COPIÉ ✓';
     btn.classList.add('copied');
     setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {});
+}
+
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent.trim()).then(() => {
+    btn.textContent = 'COPIÉ ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPIER'; btn.classList.remove('copied'); }, 2000);
   }).catch(() => {});
 }
 
