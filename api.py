@@ -58,5 +58,23 @@ def prices():
 def health():
     return jsonify({'status': 'ok', 'symbols': len(_prices)})
 
+@app.route('/proxy/kline')
+def proxy_kline():
+    from flask import request
+    import requests as req
+    params = request.args.to_dict()
+    r = req.get('https://api.bybit.com/v5/market/kline', params=params, timeout=10)
+    return jsonify(r.json())
+
+@app.route('/')
+def serve_dashboard():
+    from flask import send_from_directory
+    return send_from_directory('.', 'index.html')
+
+@app.route('/<path:filename>')
+def serve_static(filename):
+    from flask import send_from_directory
+    return send_from_directory('.', filename)
+
 def start_api(port: int = 5000):
     app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)

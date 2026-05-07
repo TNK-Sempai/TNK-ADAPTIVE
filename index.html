@@ -1,387 +1,1135 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TNK — Multi-Pair Adaptive Bot</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&display=swap"
-    rel="stylesheet">
+  <title>TNK ADAPTIVE — Tanuki Corporation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-  <header>
-    <div class="logo">
-      <h1>TNK ADAPTIVE</h1>
-      <span>MULTI-PAIR · BYBIT · PAPER</span>
-    </div>
-    <div class="hright">
-      <span class="eq" id="h-equity">——</span>
-      <span class="ts"><span class="dot"></span><span id="h-ts">En attente...</span></span>
-    </div>
-  </header>
+<!-- Offline Banner -->
+<div id="offlineBanner">⚠ API HORS LIGNE — Dernières données affichées — Reconnexion en cours...</div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="show('overview')">Overview</div>
-    <div class="tab" onclick="show('positions')">Positions <span id="tab-pos-count"></span></div>
-    <div class="tab" onclick="show('signals')">Signaux <span id="tab-sig-count"></span></div>
-    <div class="tab" onclick="show('trades')">Trades</div>
-    <div class="tab" onclick="show('adapt')">Adaptations</div>
-    <div class="tab" onclick="show('params')">Paramètres</div>
+<!-- ─── HEADER ───────────────────────────────────────────── -->
+<header>
+  <div class="header-brand">
+    <img src="tnk-logo.png" class="header-logo" alt="TNK Tanuki">
+    <div class="header-brand-labels">
+      <div class="logo-adaptive-label">ADAPTIVE</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:2px">TANUKI CORP</div>
+    </div>
   </div>
 
-  <div class="wrap">
+  <div class="header-ticker" id="headerTicker">
+    <span class="ticker-item"><span class="ticker-sym mono" style="font-size:10px">Chargement...</span></span>
+  </div>
 
-    <!-- ── KPIs ── -->
-    <div class="kpi-row">
-      <div class="kpi"><label>Equity</label>
-        <div class="v" id="k-equity">——</div><small id="k-ret">——</small>
+  <div class="header-right">
+    <div class="live-badge">
+      <span class="live-dot" id="liveDot"></span>
+      <span>LIVE</span>
+    </div>
+    <div class="header-equity">
+      <span id="hdrEquity">— USDT</span>
+      <span id="hdrReturn" style="color:var(--muted)">—</span>
+    </div>
+    <div class="header-clock" id="clock">00:00:00</div>
+  </div>
+</header>
+
+<!-- ─── TABS NAV ─────────────────────────────────────────── -->
+<nav class="tabs-nav">
+  <button class="tab-btn active" data-tab="overview">OVERVIEW <span class="tab-count" id="tc-overview">—</span></button>
+  <button class="tab-btn" data-tab="charts">CHARTS <span class="tab-count" id="tc-charts">0</span></button>
+  <button class="tab-btn" data-tab="trades">TRADES <span class="tab-count" id="tc-trades">0</span></button>
+  <button class="tab-btn" data-tab="adapt">ADAPTATIONS <span class="tab-count" id="tc-adapt">0</span></button>
+  <button class="tab-btn" data-tab="params">À PROPOS</button>
+</nav>
+
+<!-- ─── MAIN ─────────────────────────────────────────────── -->
+<main>
+
+  <!-- ══════ OVERVIEW ══════ -->
+  <section id="tab-overview" class="tab-pane active">
+
+    <!-- KPI Row -->
+    <div class="kpi-row" id="kpiRow">
+      <div class="kpi-card" id="kpi0">
+        <div class="kpi-label">Equity USDT</div>
+        <div class="kpi-value" id="kEquity">—</div>
+        <div class="kpi-sub" id="kCash">Cash: —</div>
       </div>
-      <div class="kpi"><label>PnL Réalisé</label>
-        <div class="v" id="k-pnl">——</div><small>cumulé</small>
+      <div class="kpi-card" id="kpi1">
+        <div class="kpi-label">PnL Réalisé</div>
+        <div class="kpi-value" id="kPnl">—</div>
+        <div class="kpi-sub" id="kUpnl">Non réalisé: —</div>
       </div>
-      <div class="kpi"><label>Win Rate</label>
-        <div class="v" id="k-wr">——</div>
-        <div class="wl-bg">
-          <div class="wl-fill" id="wl" style="width:0"></div>
-        </div>
+      <div class="kpi-card" id="kpi2">
+        <div class="kpi-label">Win Rate</div>
+        <div class="kpi-value" id="kWR">—</div>
+        <div class="wr-track"><div class="wr-fill" id="wrFill"></div></div>
+        <div class="kpi-sub" id="kReturn">Retour: —</div>
       </div>
-      <div class="kpi"><label>Trades</label>
-        <div class="v w" id="k-trades">——</div><small id="k-wl">——</small>
+      <div class="kpi-card" id="kpi3">
+        <div class="kpi-label">Trades W / L</div>
+        <div class="kpi-value" id="kWL">—</div>
+        <div class="kpi-sub" id="kTotal">Total: —</div>
       </div>
-      <div class="kpi"><label>Positions / Drawdown</label>
-        <div class="v w" id="k-pos">——</div><small id="k-dd">——</small>
+      <div class="kpi-card" id="kpi4">
+        <div class="kpi-label">Positions / Drawdown</div>
+        <div class="kpi-value" id="kPos">—</div>
+        <div class="kpi-sub" id="kDD">Max DD: —</div>
       </div>
     </div>
 
-    <!-- ═════════════ OVERVIEW ═════════════ -->
-    <div id="page-overview" class="page active">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Positions ouvertes</span></div>
-        <div class="pnl-b">
-          <div class="pos-grid" id="pos-list">
-            <p class="m" style="text-align:center;padding:32px;letter-spacing:3px;font-size:10px;">Aucune position
-              ouverte</p>
+    <!-- Positions -->
+    <div class="section-title">POSITIONS OUVERTES <span class="s-badge" id="posCountBadge">0</span></div>
+    <div class="pos-grid" id="posGrid">
+      <div class="empty" style="display:flex;flex-direction:column;align-items:center;gap:12px;padding:48px">
+        <img src="tnk-logo.png" style="height:80px;opacity:.18;mix-blend-mode:screen;filter:grayscale(0.3)" alt="">
+        <span>AUCUNE POSITION OUVERTE</span>
+      </div>
+    </div>
+
+    <!-- Signals -->
+    <div class="section-title">SIGNAUX CE CYCLE</div>
+    <div id="signalsArea">
+      <div class="empty">AUCUN SIGNAL DÉTECTÉ CE CYCLE</div>
+    </div>
+
+    <!-- Mini trades -->
+    <div class="section-title">DERNIERS TRADES</div>
+    <div class="mini-trades-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>Symbole</th><th>Type</th><th>Entrée</th><th>Sortie</th>
+            <th>PnL</th><th>%</th><th>Raison</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="miniTradesBody">
+          <tr><td colspan="9" class="c-muted" style="text-align:center;padding:24px">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </section>
+
+  <!-- ══════ CHARTS ══════ -->
+  <section id="tab-charts" class="tab-pane">
+    <div class="charts-grid" id="chartsGrid">
+      <div class="empty" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:64px">
+        <img src="tnk-logo.png" style="height:100px;opacity:.12;mix-blend-mode:screen" alt="">
+        <span>AUCUNE POSITION — LES GRAPHIQUES APPARAISSENT ICI</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════ TRADES ══════ -->
+  <section id="tab-trades" class="tab-pane">
+    <div class="filters-row" id="filtersRow">
+      <button class="filter-btn active" data-f="all">ALL</button>
+      <button class="filter-btn" data-f="win">WIN</button>
+      <button class="filter-btn" data-f="loss">LOSS</button>
+      <button class="filter-btn" data-f="long">LONG</button>
+      <button class="filter-btn" data-f="short">SHORT</button>
+      <span class="filter-sep"></span>
+      <div id="symFilters" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+    <div class="tbl-wrap tbl-scroll">
+      <table id="tradesTable">
+        <thead>
+          <tr>
+            <th>#</th><th>Symbole</th><th>Type</th><th>Entrée</th><th>Sortie</th>
+            <th>Taille</th><th>PnL</th><th>%</th><th>Raison</th><th>Durée</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="tradesBody">
+          <tr><td colspan="11" class="c-muted" style="text-align:center;padding:24px">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════ ADAPTATIONS ══════ -->
+  <section id="tab-adapt" class="tab-pane">
+    <div class="adapt-list" id="adaptList">
+      <div class="empty">AUCUNE ADAPTATION ENREGISTRÉE</div>
+    </div>
+  </section>
+
+  <!-- ══════ À PROPOS ══════ -->
+  <section id="tab-params" class="tab-pane">
+    <div class="about-wrap">
+
+      <!-- S1 — Hero -->
+      <div class="about-hero">
+        <div class="about-logo-wrap">
+          <img src="tnk-logo.png" class="about-logo-img"
+               onerror="this.style.display='none';document.getElementById('abt-logo-fb').style.display='block'"
+               alt="TNK">
+          <div class="about-logo-fallback" id="abt-logo-fb" style="display:none">TNK</div>
+        </div>
+        <div class="about-title">TNK <span class="hl">ADAPTIVE</span></div>
+        <div class="about-subtitle">Bot de paper trading multi-paires auto-adaptatif — Tanuki Corporation</div>
+      </div>
+
+      <!-- S2 — 4 blocs 2x2 -->
+      <div class="about-grid">
+
+        <div class="about-block">
+          <div class="about-block-icon">📡</div>
+          <div class="about-block-title">Surveillance temps réel</div>
+          <div class="about-block-body">
+            Surveille les <strong>top 50 paires USDT</strong> sur Bybit en temps réel.
+            Volume minimum filtré, liste rafraîchie toutes les 60 minutes.
           </div>
         </div>
-      </div>
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Derniers trades (20)</span></div>
-        <div style="overflow-x:auto">
-          <table id="t-recent">
-            <thead>
-              <tr>
-                <th>Symbole</th>
-                <th>Type</th>
-                <th>Entrée</th>
-                <th>Sortie</th>
-                <th>PnL</th>
-                <th>%</th>
-                <th>Raison</th>
-              </tr>
-            </thead>
-            <tbody id="tb-recent"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
 
-    <!-- ═════════════ POSITIONS ═════════════ -->
-    <div id="page-positions" class="page">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Toutes les positions ouvertes</span><span id="pos-count-full" class="m"
-            style="font-size:10px;letter-spacing:2px;"></span></div>
-        <div class="pnl-b">
-          <div class="pos-grid" id="pos-full"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ═════════════ SIGNAUX ═════════════ -->
-    <div id="page-signals" class="page">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Signaux détectés ce cycle</span><span id="sig-ts" class="m"
-            style="font-size:10px;letter-spacing:2px;"></span></div>
-        <div class="pnl-b">
-          <div class="sig-grid" id="sig-grid">
-            <p class="m" style="text-align:center;padding:32px;font-size:10px;letter-spacing:3px;">Aucun signal actif
-            </p>
+        <div class="about-block">
+          <div class="about-block-icon">📈</div>
+          <div class="about-block-title">Stratégie RSI + MA</div>
+          <div class="about-block-body">
+            Signaux <strong>long / short</strong> automatiques via RSI et croisement
+            de moyennes mobiles. SL et TP calculés par trade.
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- ═════════════ TRADES ═════════════ -->
-    <div id="page-trades" class="page">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Historique complet</span><span id="all-trade-count" class="m"
-            style="font-size:10px;letter-spacing:2px;"></span></div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Symbole</th>
-                <th>Type</th>
-                <th>Entrée</th>
-                <th>Sortie</th>
-                <th>Taille USDT</th>
-                <th>PnL</th>
-                <th>%</th>
-                <th>Raison</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody id="tb-all"></tbody>
-          </table>
+        <div class="about-block">
+          <div class="about-block-icon">🧠</div>
+          <div class="about-block-title">Apprentissage adaptatif</div>
+          <div class="about-block-body">
+            Après <strong>10 trades par paire</strong>, le moteur ajuste automatiquement
+            RSI, SL et TP selon les résultats récents.
+          </div>
+        </div>
+
+        <div class="about-block">
+          <div class="about-block-icon">🕯</div>
+          <div class="about-block-title">Dashboard live</div>
+          <div class="about-block-body">
+            Chandelles <strong>TradingView / Lightweight Charts</strong> par position,
+            PnL temps réel, journal d'adaptations et signaux actifs.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- S3 — Roadmap -->
+      <div class="section-title">ROADMAP</div>
+      <div class="about-block about-roadmap">
+        <div class="roadmap-list">
+          <div class="roadmap-item done"><span class="roadmap-check">✅</span><span>Paper trading multi-paires</span></div>
+          <div class="roadmap-item done"><span class="roadmap-check">✅</span><span>Dashboard chandelles live</span></div>
+          <div class="roadmap-item done"><span class="roadmap-check">✅</span><span>Moteur adaptatif</span></div>
+          <div class="roadmap-item done"><span class="roadmap-check">✅</span><span>Persistance SQLite</span></div>
+          <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Alertes n8n → Discord / Telegram</span></div>
+          <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Argent réel (Bybit API)</span></div>
+          <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Backtesting historique</span></div>
+          <div class="roadmap-item pending"><span class="roadmap-check">⬜</span><span>Docker + VPS</span></div>
         </div>
       </div>
-    </div>
 
-    <!-- ═════════════ ADAPT ═════════════ -->
-    <div id="page-adapt" class="page">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Journal des adaptations</span></div>
-        <div class="pnl-b" id="adapt-log-list">
-          <p class="m" style="text-align:center;padding:32px;font-size:10px;letter-spacing:3px;">Aucune adaptation
-            encore — le bot apprend après 10 trades par paire</p>
+      <!-- S4 — Support -->
+      <div class="about-support">
+        <div class="about-support-title">Si le bot vous régale 🦝</div>
+        <div class="support-cols">
+
+          <div class="support-kofi">
+            <a href="https://ko-fi.com/tanukisempai" target="_blank" class="bmc-btn">
+              ☕ BUY ME A COFFEE
+            </a>
+            <div class="kofi-sub mono" style="font-size:9px;color:var(--muted);margin-top:10px;letter-spacing:1px">
+              ko-fi.com/tanukisempai
+            </div>
+          </div>
+
+          <div class="wallets-list">
+            <div class="wallet-section">
+              <div class="wallet-label">ETH / ERC-20</div>
+              <div class="wallet-row">
+                <span class="wallet-addr">0xfFbEC59f9c180B65D69048db29c97A2114305D26</span>
+                <button class="copy-btn" onclick="copyAddr(this,'0xfFbEC59f9c180B65D69048db29c97A2114305D26')">COPY</button>
+              </div>
+            </div>
+            <div class="wallet-section">
+              <div class="wallet-label">BTC</div>
+              <div class="wallet-row">
+                <span class="wallet-addr">bc1qv0pp8q8ukufkrcz572hs2v05jp97mznzmwn08e</span>
+                <button class="copy-btn" onclick="copyAddr(this,'bc1qv0pp8q8ukufkrcz572hs2v05jp97mznzmwn08e')">COPY</button>
+              </div>
+            </div>
+            <div class="wallet-section">
+              <div class="wallet-label">SOL</div>
+              <div class="wallet-row">
+                <span class="wallet-addr">3rNkGv2589KhjMM7nnEeU227j2paT4T5dR5fGBpSiTUv</span>
+                <button class="copy-btn" onclick="copyAddr(this,'3rNkGv2589KhjMM7nnEeU227j2paT4T5dR5fGBpSiTUv')">COPY</button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
+
+      <!-- S5 — Disclaimer -->
+      <div class="about-disclaimer">
+        ⚠️ Projet éducatif uniquement. Ne constitue pas un conseil financier.<br>
+        Tanuki Corporation décline toute responsabilité en cas de pertes.<br>
+        Tradez avec votre propre jugement.
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  TNK ADAPTIVE — Dashboard 2.0
+//  Tanuki Corporation — 2026
+// ═══════════════════════════════════════════════════════════
+
+const API = ''; // dashboard servi par Flask → URLs relatives
+
+const state = {
+  stats: null,
+  positions: [],
+  trades: [],
+  adaptLog: [],
+  params: [],
+  signals: {},
+  prices: {},
+};
+
+let prevVals      = {};
+let charts        = {};      // symbol → { chart, series }
+let posTimers     = {};      // symbol → intervalId
+let activeTab     = 'overview';
+let tradeFilter   = 'all';
+let symFilter     = 'all';
+let isOnline      = true;
+let chartsInitialized = false; // true after first Charts tab click
+
+// ─── Grain ─────────────────────────────────────────────────
+
+// ─── Utils ─────────────────────────────────────────────────
+
+function f(n, d = 2) {
+  if (n == null || isNaN(n)) return '—';
+  return (+n).toFixed(d);
+}
+
+function fp(n) {
+  if (n == null || isNaN(n)) return '—';
+  const a = Math.abs(n);
+  return (+n).toFixed(a >= 10000 ? 1 : a >= 100 ? 2 : a >= 1 ? 3 : 4);
+}
+
+function pct(n, d = 2) {
+  if (n == null || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + (+n).toFixed(d) + '%';
+}
+
+function pnlStr(n, d = 4) {
+  if (n == null || isNaN(n)) return '—';
+  return (n >= 0 ? '+' : '') + (+n).toFixed(d);
+}
+
+function ts2date(ts) {
+  if (!ts) return '—';
+  return new Date(ts * 1000).toLocaleString('fr-FR', {
+    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function durStr(start, end) {
+  const s = Math.max(0, Math.floor(((end || Date.now() / 1000) - start)));
+  const h = s / 3600 | 0;
+  const m = (s % 3600) / 60 | 0;
+  const sec = s % 60;
+  return h > 0 ? `${h}h ${m}m` : m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+function toBybitSymbol(symbol) {
+  // "BTC/USDT:USDT" → "BTCUSDT"
+  // "ATH/USDT"      → "ATHUSDT"
+  return symbol.split(':')[0].replace('/', '');
+}
+
+function flashCard(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('flash');
+  void el.offsetWidth;
+  el.classList.add('flash');
+}
+
+function maybeFlash(key, newVal, cardId) {
+  const s = String(newVal);
+  if (prevVals[key] !== s) {
+    prevVals[key] = s;
+    if (cardId) flashCard(cardId);
+  }
+}
+
+// ─── Fetch ─────────────────────────────────────────────────
+
+async function getJSON(path) {
+  const r = await fetch(API + path, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function fetchAll() {
+  try {
+    const [stats, positions, trades, adaptLog, params, signals, prices] = await Promise.all([
+      getJSON('/api/stats'),
+      getJSON('/api/positions'),
+      getJSON('/api/trades'),
+      getJSON('/api/adapt_log'),
+      getJSON('/api/params'),
+      getJSON('/api/signals'),
+      getJSON('/api/prices'),
+    ]);
+
+    state.stats     = stats;
+    state.positions = Array.isArray(positions) ? positions : [];
+    state.trades    = Array.isArray(trades)    ? trades    : [];
+    state.adaptLog  = Array.isArray(adaptLog)  ? adaptLog  : [];
+    state.params    = Array.isArray(params)    ? params    : [];
+    state.signals   = signals  || {};
+    state.prices    = prices   || {};
+
+    setOnline(true);
+    renderAll();
+    // Charts only update if already initialized (tab was visited at least once)
+    if (chartsInitialized && activeTab === 'charts') renderCharts();
+
+  } catch (e) {
+    setOnline(false);
+  }
+}
+
+async function refreshPrices() {
+  try {
+    state.prices = await getJSON('/api/prices');
+    updatePosPrices();
+    renderTicker();
+    updateChartCandles();
+  } catch (e) {}
+}
+
+function setOnline(on) {
+  isOnline = on;
+  document.getElementById('offlineBanner').classList.toggle('show', !on);
+  document.getElementById('liveDot').classList.toggle('offline', !on);
+}
+
+// ─── Render All ────────────────────────────────────────────
+
+function renderAll() {
+  renderKPIs();
+  renderPositions();
+  renderSignals();
+  renderMiniTrades();
+  renderTrades();
+  renderAdapt();
+  renderTicker();
+  updateTabCounts();
+}
+
+// ─── KPIs ───────────────────────────────────────────────────
+
+function renderKPIs() {
+  const s = state.stats;
+  if (!s) return;
+
+  // Equity
+  const eq = f(s.equity, 2);
+  maybeFlash('equity', eq, 'kpi0');
+  const eEl = document.getElementById('kEquity');
+  eEl.textContent = eq;
+  eEl.className = 'kpi-value' + (s.equity > s.initial_balance ? ' pos' : s.equity < s.initial_balance ? ' neg' : '');
+  document.getElementById('kCash').textContent = `Cash: ${f(s.cash)} USDT`;
+
+  // PnL
+  const pnlV = pnlStr(s.total_pnl, 4);
+  maybeFlash('pnl', pnlV, 'kpi1');
+  const pEl = document.getElementById('kPnl');
+  pEl.textContent = pnlV;
+  pEl.className = 'kpi-value' + (s.total_pnl > 0 ? ' pos' : s.total_pnl < 0 ? ' neg' : '');
+  document.getElementById('kUpnl').textContent = `Non réalisé: ${pnlStr(s.unrealized_pnl, 4)} USDT`;
+
+  // Win rate
+  const wrV = f(s.win_rate, 1) + '%';
+  maybeFlash('wr', wrV, 'kpi2');
+  document.getElementById('kWR').textContent = wrV;
+  document.getElementById('wrFill').style.width = Math.min(100, s.win_rate) + '%';
+  document.getElementById('kReturn').textContent = `Retour: ${pct(s.return_pct)}`;
+
+  // Trades W/L
+  const wlV = `${s.wins} / ${s.losses}`;
+  maybeFlash('wl', wlV, 'kpi3');
+  document.getElementById('kWL').textContent = wlV;
+  document.getElementById('kTotal').textContent = `Total: ${s.total_trades} trades`;
+
+  // Positions / DD
+  const posV = String(s.open_positions);
+  maybeFlash('posdd', posV, 'kpi4');
+  document.getElementById('kPos').textContent = posV;
+  document.getElementById('kDD').textContent = `Max DD: ${f(s.max_drawdown_pct, 2)}%`;
+  document.getElementById('posCountBadge').textContent = s.open_positions;
+
+  // Header
+  document.getElementById('hdrEquity').textContent = f(s.equity, 2) + ' USDT';
+  const retEl = document.getElementById('hdrReturn');
+  retEl.textContent = pct(s.return_pct);
+  retEl.style.color = s.return_pct >= 0 ? 'var(--green)' : 'var(--red)';
+}
+
+// ─── Tab counts ────────────────────────────────────────────
+
+function updateTabCounts() {
+  document.getElementById('tc-overview').textContent = state.stats?.open_positions ?? '—';
+  document.getElementById('tc-charts').textContent   = state.positions.length;
+  document.getElementById('tc-trades').textContent   = state.trades.length;
+  document.getElementById('tc-adapt').textContent    = state.adaptLog.length;
+}
+
+// ─── Positions ─────────────────────────────────────────────
+
+function renderPositions() {
+  const grid = document.getElementById('posGrid');
+  if (!state.positions.length) {
+    grid.innerHTML = '<div class="empty">AUCUNE POSITION OUVERTE</div>';
+    clearPosTimers();
+    return;
+  }
+
+  const syms = state.positions.map(p => p.symbol).join(',');
+  if (prevVals._posList !== syms) {
+    prevVals._posList = syms;
+    clearPosTimers();
+    grid.innerHTML = '';
+    state.positions.forEach(p => grid.appendChild(buildPosCard(p)));
+  } else {
+    state.positions.forEach(p => updatePosCardValues(p));
+  }
+
+  startPosTimers();
+}
+
+function calcProgress(pos) {
+  const sl  = pos.stop_loss;
+  const tp  = pos.take_profit;
+  const cur = pos.current_price;
+  const rng = Math.abs(tp - sl);
+  if (!rng) return { fill: 50, cursor: 50 };
+  let cursor;
+  if (pos.type === 'long')  cursor = Math.max(0, Math.min(100, (cur - sl) / rng * 100));
+  else                       cursor = Math.max(0, Math.min(100, (sl - cur) / rng * 100));
+  return { fill: cursor, cursor };
+}
+
+function buildPosCard(pos) {
+  const div = document.createElement('div');
+  div.className = 'pos-card';
+  div.dataset.pos = pos.symbol;
+  div.innerHTML = posCardHTML(pos);
+  return div;
+}
+
+function posCardHTML(pos) {
+  const base = pos.symbol.split('/')[0];
+  const pnl  = pos.unrealized_pnl;
+  const pnlPctV = pos.size_usdt > 0 ? pnl / pos.size_usdt * 100 : 0;
+  const prog = calcProgress(pos);
+
+  return `
+    <div class="pos-card-top">
+      <div>
+        <div class="pos-sym">${base}</div>
+        <div class="pos-full-sym">${pos.symbol}</div>
+      </div>
+      <div class="pos-right-top">
+        <div class="pos-badge ${pos.type}">${pos.type.toUpperCase()}</div>
+        <div class="pos-pnl ${pnl >= 0 ? 'pos' : 'neg'}" data-pnl="${pos.symbol}">${pnlStr(pnl, 4)}</div>
+        <div class="pos-pnl-pct c-muted" data-pnlpct="${pos.symbol}">${pct(pnlPctV)}</div>
+      </div>
     </div>
 
-    <!-- ═════════════ PARAMS ═════════════ -->
-    <div id="page-params" class="page">
-      <div class="pnl">
-        <div class="pnl-h"><span class="t">Paramètres adaptatifs par symbole</span></div>
-        <div style="overflow-x:auto">
-          <table>
-            <thead>
-              <tr>
-                <th>Symbole</th>
-                <th>RSI Oversold</th>
-                <th>RSI Overbought</th>
-                <th>MA Fast</th>
-                <th>MA Slow</th>
-                <th>Stop Loss</th>
-                <th>Take Profit</th>
-                <th>Adaptations</th>
-                <th>Dernière raison</th>
-              </tr>
-            </thead>
-            <tbody id="tb-params"></tbody>
-          </table>
+    <div class="pos-prices">
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">ENTRY</div>
+        <div class="pos-price-val entry">${fp(pos.entry_price)}</div>
+      </div>
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">CURRENT</div>
+        <div class="pos-price-val cur" data-cur="${pos.symbol}">${fp(pos.current_price)}</div>
+      </div>
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">SIZE</div>
+        <div class="pos-price-val">${f(pos.size_usdt, 1)} USDT</div>
+      </div>
+    </div>
+
+    <div class="pos-prices" style="margin-top:-2px">
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">STOP LOSS</div>
+        <div class="pos-price-val sl-val">${fp(pos.stop_loss)}</div>
+      </div>
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">TAKE PROFIT</div>
+        <div class="pos-price-val tp-val">${fp(pos.take_profit)}</div>
+      </div>
+      <div class="pos-price-item">
+        <div class="pos-price-lbl">TOKENS</div>
+        <div class="pos-price-val">${f(pos.size_tokens, 6)}</div>
+      </div>
+    </div>
+
+    <div class="pos-progress">
+      <div class="pos-bar-labels">
+        <span class="lbl-sl">SL</span>
+        <span class="lbl-tp">TP</span>
+      </div>
+      <div class="pos-track" data-track="${pos.symbol}">
+        <div class="pos-fill ${pos.type}" style="width:${prog.fill}%"></div>
+      </div>
+      <div class="pos-cursor" style="left:${prog.cursor}%" data-cur-dot="${pos.symbol}"></div>
+    </div>
+
+    <div class="pos-footer">
+      <span class="pos-timer" data-timer="${pos.symbol}">—</span>
+      <span>${ts2date(pos.entry_time)}</span>
+    </div>
+  `;
+}
+
+function updatePosCardValues(pos) {
+  const pnl     = pos.unrealized_pnl;
+  const pnlPctV = pos.size_usdt > 0 ? pnl / pos.size_usdt * 100 : 0;
+
+  const pnlEl = document.querySelector(`[data-pnl="${pos.symbol}"]`);
+  if (pnlEl) {
+    pnlEl.textContent = pnlStr(pnl, 4);
+    pnlEl.className   = `pos-pnl ${pnl >= 0 ? 'pos' : 'neg'}`;
+  }
+
+  const pctEl = document.querySelector(`[data-pnlpct="${pos.symbol}"]`);
+  if (pctEl) pctEl.textContent = pct(pnlPctV);
+
+  const curEl = document.querySelector(`[data-cur="${pos.symbol}"]`);
+  if (curEl) curEl.textContent = fp(pos.current_price);
+
+  const prog  = calcProgress(pos);
+  const track = document.querySelector(`[data-track="${pos.symbol}"] .pos-fill`);
+  const dot   = document.querySelector(`[data-cur-dot="${pos.symbol}"]`);
+  if (track) track.style.width = prog.fill + '%';
+  if (dot)   dot.style.left   = prog.cursor + '%';
+}
+
+function updatePosPrices() {
+  state.positions.forEach(pos => {
+    const price = state.prices[pos.symbol];
+    if (price == null) return;
+    pos.current_price   = price;
+    pos.unrealized_pnl  = pos.type === 'long'
+      ? (price - pos.entry_price) / pos.entry_price * pos.size_usdt
+      : (pos.entry_price - price) / pos.entry_price * pos.size_usdt;
+    updatePosCardValues(pos);
+  });
+}
+
+function startPosTimers() {
+  state.positions.forEach(pos => {
+    if (posTimers[pos.symbol]) return;
+    const el = document.querySelector(`[data-timer="${pos.symbol}"]`);
+    if (!el) return;
+    const tick = () => { el.textContent = durStr(pos.entry_time); };
+    tick();
+    posTimers[pos.symbol] = setInterval(tick, 1000);
+  });
+}
+
+function clearPosTimers() {
+  Object.values(posTimers).forEach(t => clearInterval(t));
+  posTimers = {};
+}
+
+// ─── Signals ───────────────────────────────────────────────
+
+function renderSignals() {
+  const area   = document.getElementById('signalsArea');
+  const entries = Object.entries(state.signals || {});
+  if (!entries.length) {
+    area.innerHTML = '<div class="empty">AUCUN SIGNAL DÉTECTÉ CE CYCLE</div>';
+    return;
+  }
+  area.innerHTML = `<div class="signals-wrap">${
+    entries.map(([sym, sig]) => {
+      const dir = typeof sig === 'object' ? (sig.direction || sig.type || 'signal') : String(sig);
+      return `<div class="signal-card">
+        <span class="signal-sym">${sym.split('/')[0]}</span>
+        <span class="signal-dir ${dir.toLowerCase()}">${dir.toUpperCase()}</span>
+      </div>`;
+    }).join('')
+  }</div>`;
+}
+
+// ─── Charts ────────────────────────────────────────────────
+
+function renderCharts() {
+  const grid = document.getElementById('chartsGrid');
+
+  if (!state.positions.length) {
+    destroyAllCharts();
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:14px;padding:64px"><img src="tnk-logo.png" style="height:100px;opacity:.12;mix-blend-mode:screen" alt=""><span>AUCUNE POSITION — LES GRAPHIQUES APPARAISSENT ICI</span></div>';
+    return;
+  }
+
+  const currentSyms = state.positions.map(p => p.symbol);
+
+  // Remove stale charts
+  Object.keys(charts).forEach(sym => {
+    if (!currentSyms.includes(sym)) {
+      try { charts[sym].chart.remove(); } catch (e) {}
+      delete charts[sym];
+      const card = grid.querySelector(`[data-chart="${sym}"]`);
+      if (card) card.remove();
+    }
+  });
+
+  // Add new / update existing
+  state.positions.forEach(pos => {
+    if (!charts[pos.symbol]) {
+      const card = buildChartCard(pos);
+      grid.appendChild(card);
+      setTimeout(() => initChart(pos), 30);
+    } else {
+      updateChartCardMeta(pos);
+    }
+  });
+}
+
+function buildChartCard(pos) {
+  const base = pos.symbol.split('/')[0];
+  const pnl  = pos.unrealized_pnl;
+  const div  = document.createElement('div');
+  div.className = 'chart-card';
+  div.dataset.chart = pos.symbol;
+  div.innerHTML = `
+    <div class="chart-card-header">
+      <div class="chart-card-left">
+        <div class="chart-sym ${pos.type}">${base}</div>
+        <div class="pos-badge ${pos.type}">${pos.type.toUpperCase()}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="chart-cur-price" data-cprice="${pos.symbol}">${fp(pos.current_price)}</div>
+        <div class="chart-tf">1H</div>
+      </div>
+    </div>
+    <div class="chart-wrap" id="cw-${toBybitSymbol(pos.symbol)}"></div>
+    <div class="chart-info-bar">
+      <div class="cib-item"><span class="cib-lbl">ENTRY</span><span class="c-lime mono">${fp(pos.entry_price)}</span></div>
+      <div class="cib-item"><span class="cib-lbl">SL</span><span class="c-red mono">${fp(pos.stop_loss)}</span></div>
+      <div class="cib-item"><span class="cib-lbl">TP</span><span class="c-green mono">${fp(pos.take_profit)}</span></div>
+      <div class="cib-item">
+        <span class="cib-lbl">PNL</span>
+        <span class="mono ${pnl >= 0 ? 'c-green' : 'c-red'}" data-cpnl="${pos.symbol}">${pnlStr(pnl, 4)} USDT</span>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function updateChartCardMeta(pos) {
+  const pr = document.querySelector(`[data-cprice="${pos.symbol}"]`);
+  if (pr) pr.textContent = fp(pos.current_price);
+  const pn = document.querySelector(`[data-cpnl="${pos.symbol}"]`);
+  if (pn) {
+    pn.textContent = pnlStr(pos.unrealized_pnl, 4) + ' USDT';
+    pn.className   = `mono ${pos.unrealized_pnl >= 0 ? 'c-green' : 'c-red'}`;
+  }
+}
+
+async function initChart(pos) {
+  const containerId = `cw-${toBybitSymbol(pos.symbol)}`;
+  const container   = document.getElementById(containerId);
+  if (!container) return;
+
+  const w = container.clientWidth;
+  if (w === 0) {
+    console.warn(`[TNK] initChart: container width=0 for ${pos.symbol} — tab not visible?`);
+    return;
+  }
+  console.log(`[TNK] initChart ${pos.symbol} w=${w}`);
+
+  const chart = LightweightCharts.createChart(container, {
+    width:  w,
+    height: 280,
+    layout: { background: { color: '#0e0e0e' }, textColor: '#555555' },
+    grid:   { vertLines: { color: '#1a1a1a' }, horzLines: { color: '#1a1a1a' } },
+    crosshair: {
+      vertLine: { color: '#262626', labelBackgroundColor: '#111111' },
+      horzLine: { color: '#262626', labelBackgroundColor: '#111111' },
+    },
+    rightPriceScale: { borderColor: '#1a1a1a', textColor: '#555555' },
+    timeScale: { borderColor: '#1a1a1a', textColor: '#555555', timeVisible: true, secondsVisible: false },
+    handleScroll: true,
+    handleScale: true,
+  });
+
+  const series = chart.addSeries(LightweightCharts.CandlestickSeries, {
+    upColor:         '#3ddc84',
+    downColor:       '#ff4f4f',
+    borderUpColor:   '#3ddc84',
+    borderDownColor: '#ff4f4f',
+    wickUpColor:     '#3ddc84',
+    wickDownColor:   '#ff4f4f',
+  });
+
+  // Price lines
+  series.createPriceLine({ price: pos.entry_price, color: '#c8f060', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid,  title: 'ENTRY', axisLabelVisible: true });
+  series.createPriceLine({ price: pos.stop_loss,   color: '#ff4f4f', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'SL',    axisLabelVisible: true });
+  series.createPriceLine({ price: pos.take_profit, color: '#3ddc84', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'TP',    axisLabelVisible: true });
+
+  charts[pos.symbol] = { chart, series };
+
+  // Resize
+  const ro = new ResizeObserver(() => {
+    if (container.clientWidth > 0) chart.applyOptions({ width: container.clientWidth });
+  });
+  ro.observe(container);
+
+  await loadCandles(pos.symbol, series);
+}
+
+async function fetchKlines(symbol) {
+  const sym = symbol.split(':')[0].replace('/', '');
+  for (const cat of ['linear', 'spot']) {
+    try {
+      const url  = `/proxy/kline?category=${cat}&symbol=${sym}&interval=60&limit=100`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      if (data.result?.list?.length > 0) {
+        console.log(`[TNK] ${sym} — ${data.result.list.length} candles (${cat})`);
+        return { list: data.result.list, category: cat };
+      }
+    } catch (e) {
+      console.error(`[TNK] proxy kline error ${cat} ${sym}:`, e);
+    }
+  }
+  console.error(`[TNK] fetchKlines: no data for ${symbol}`);
+  return { list: [], category: null };
+}
+
+async function loadCandles(symbol, series) {
+  const { list, category } = await fetchKlines(symbol);
+  if (!list.length) return;
+
+  // Bybit returns newest-first — reverse before passing to Lightweight Charts
+  const candles = list.reverse().map(k => ({
+    time:  parseInt(k[0]) / 1000,
+    open:  parseFloat(k[1]),
+    high:  parseFloat(k[2]),
+    low:   parseFloat(k[3]),
+    close: parseFloat(k[4]),
+  }));
+
+  series.setData(candles);
+  if (charts[symbol]) charts[symbol].category = category;
+}
+
+async function updateChartCandles() {
+  for (const [sym, c] of Object.entries(charts)) {
+    try {
+      const clean = toBybitSymbol(sym);
+      const cat   = c.category || 'linear';
+      const url   = `/proxy/kline?category=${cat}&symbol=${clean}&interval=60&limit=2`;
+      const res   = await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const data  = await res.json();
+      const k     = data.result?.list?.[0];
+      if (!k) continue;
+      c.series.update({
+        time:  parseInt(k[0]) / 1000,
+        open:  parseFloat(k[1]),
+        high:  parseFloat(k[2]),
+        low:   parseFloat(k[3]),
+        close: parseFloat(k[4]),
+      });
+    } catch (e) {
+      console.error('[TNK] updateChartCandles error for', sym, e);
+    }
+  }
+}
+
+function destroyAllCharts() {
+  Object.values(charts).forEach(c => { try { c.chart.remove(); } catch (e) {} });
+  charts = {};
+}
+
+// ─── Ticker ─────────────────────────────────────────────────
+
+function renderTicker() {
+  const ticker  = document.getElementById('headerTicker');
+  const entries = Object.entries(state.prices || {}).slice(0, 14);
+  if (!entries.length) return;
+
+  // Update existing items or rebuild
+  const existing = {};
+  ticker.querySelectorAll('.ticker-item').forEach(el => {
+    const sym = el.dataset.sym;
+    if (sym) existing[sym] = el;
+  });
+
+  const fragment = document.createDocumentFragment();
+  entries.forEach(([sym, price]) => {
+    const base = sym.split('/')[0];
+    if (existing[sym]) {
+      const prEl = existing[sym].querySelector('.ticker-price');
+      const prev = prEl.dataset.val;
+      const now  = fp(price);
+      if (prev !== now) {
+        prEl.dataset.val = now;
+        prEl.textContent = now;
+        prEl.classList.remove('tick-up', 'tick-down');
+        void prEl.offsetWidth;
+        prEl.classList.add(+price > +prev ? 'tick-up' : 'tick-down');
+        setTimeout(() => prEl.classList.remove('tick-up', 'tick-down'), 500);
+      }
+      fragment.appendChild(existing[sym]);
+    } else {
+      const div  = document.createElement('div');
+      div.className   = 'ticker-item';
+      div.dataset.sym = sym;
+      div.innerHTML   = `<span class="ticker-sym">${base}</span><span class="ticker-price" data-val="${fp(price)}">${fp(price)}</span>`;
+      fragment.appendChild(div);
+    }
+  });
+  ticker.innerHTML = '';
+  ticker.appendChild(fragment);
+}
+
+// ─── Trades ────────────────────────────────────────────────
+
+function renderMiniTrades() {
+  const tbody  = document.getElementById('miniTradesBody');
+  const recent = [...state.trades].reverse().slice(0, 10);
+  if (!recent.length) {
+    tbody.innerHTML = '<tr><td colspan="9" class="c-muted" style="text-align:center;padding:24px">AUCUN TRADE</td></tr>';
+    return;
+  }
+  tbody.innerHTML = recent.map(t => tradeRow(t, true)).join('');
+}
+
+function renderTrades() {
+  buildSymFilters();
+  const tbody  = document.getElementById('tradesBody');
+  const trades = filteredTrades();
+  if (!trades.length) {
+    tbody.innerHTML = '<tr><td colspan="11" class="c-muted" style="text-align:center;padding:24px">AUCUN TRADE</td></tr>';
+    return;
+  }
+  tbody.innerHTML = [...trades].reverse().map(t => tradeRow(t, false)).join('');
+}
+
+function filteredTrades() {
+  return state.trades.filter(t => {
+    if (tradeFilter === 'win'   && !t.win)           return false;
+    if (tradeFilter === 'loss'  &&  t.win)           return false;
+    if (tradeFilter === 'long'  && t.type !== 'long') return false;
+    if (tradeFilter === 'short' && t.type !== 'short') return false;
+    if (symFilter !== 'all'     && t.symbol !== symFilter) return false;
+    return true;
+  });
+}
+
+function tradeRow(t, mini) {
+  const winCls  = t.win ? 'win' : 'loss';
+  const pnlCls  = t.pnl >= 0 ? 'c-green' : 'c-red';
+  const reason  = (t.reason || 'signal').toLowerCase().replace(' ', '_');
+  const reasonLabel = t.reason || 'signal';
+  const sym     = (t.symbol || '').split('/')[0];
+
+  if (mini) return `
+    <tr class="${winCls}">
+      <td class="c-muted">${t.id ?? '—'}</td>
+      <td>${sym}</td>
+      <td><span class="badge-type ${t.type}">${(t.type || '').toUpperCase()}</span></td>
+      <td>${fp(t.entry_price)}</td>
+      <td>${fp(t.exit_price)}</td>
+      <td class="${pnlCls}">${pnlStr(t.pnl, 4)}</td>
+      <td class="${pnlCls}">${pct(t.pnl_pct)}</td>
+      <td><span class="reason-tag ${reason}">${reasonLabel}</span></td>
+      <td class="c-muted">${ts2date(t.exit_time || t.entry_time)}</td>
+    </tr>`;
+
+  return `
+    <tr class="${winCls}">
+      <td class="c-muted">${t.id ?? '—'}</td>
+      <td class="c-lime">${t.symbol || '—'}</td>
+      <td><span class="badge-type ${t.type}">${(t.type || '').toUpperCase()}</span></td>
+      <td>${fp(t.entry_price)}</td>
+      <td>${fp(t.exit_price)}</td>
+      <td class="c-muted">${f(t.size_usdt, 1)} USDT</td>
+      <td class="${pnlCls}">${pnlStr(t.pnl, 4)}</td>
+      <td class="${pnlCls}">${pct(t.pnl_pct)}</td>
+      <td><span class="reason-tag ${reason}">${reasonLabel}</span></td>
+      <td class="c-muted">${t.exit_time ? durStr(t.entry_time, t.exit_time) : '—'}</td>
+      <td class="c-muted">${ts2date(t.exit_time || t.entry_time)}</td>
+    </tr>`;
+}
+
+function buildSymFilters() {
+  const wrap = document.getElementById('symFilters');
+  const syms = [...new Set(state.trades.map(t => t.symbol).filter(Boolean))];
+
+  // Add new symbol buttons
+  syms.forEach(sym => {
+    if (wrap.querySelector(`[data-sym="${sym}"]`)) return;
+    const btn = document.createElement('button');
+    btn.className  = 'filter-btn';
+    btn.dataset.sym = sym;
+    btn.textContent = sym.split('/')[0];
+    btn.onclick = () => {
+      symFilter = sym;
+      wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#filtersRow .filter-btn[data-f]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTrades();
+    };
+    wrap.appendChild(btn);
+  });
+}
+
+// ─── Adapt Log ─────────────────────────────────────────────
+
+function renderAdapt() {
+  const list = document.getElementById('adaptList');
+  if (!state.adaptLog.length) {
+    list.innerHTML = '<div class="empty">AUCUNE ADAPTATION ENREGISTRÉE</div>';
+    return;
+  }
+
+  list.innerHTML = [...state.adaptLog].reverse().map(a => {
+    let chips = '';
+    try {
+      const changes = typeof a.changes === 'string' ? JSON.parse(a.changes) : a.changes;
+      if (changes && typeof changes === 'object') {
+        chips = Object.entries(changes).map(([k, v]) =>
+          `<div class="adapt-chip">
+            <span class="chip-key">${k}</span>
+            <span class="chip-from">${f(v.from, 4)}</span>
+            <span class="chip-arrow">→</span>
+            <span class="chip-to">${f(v.to, 4)}</span>
+          </div>`
+        ).join('');
+      }
+    } catch (e) {}
+
+    const wrColor  = a.win_rate >= 0.5 ? 'c-green' : 'c-red';
+    const pnlColor = a.avg_pnl  >= 0   ? 'c-green' : 'c-red';
+
+    return `
+      <div class="adapt-entry">
+        <div class="adapt-ts">${ts2date(a.timestamp)}</div>
+        <div class="adapt-sym">${(a.symbol || '').split('/')[0]}</div>
+        <div class="adapt-changes">${chips || '<span class="c-muted mono" style="font-size:9px">Aucun changement</span>'}</div>
+        <div class="adapt-metrics">
+          <span>WR: <span class="${wrColor}">${f(a.win_rate * 100, 1)}%</span></span>
+          <span>SL Hit: <span class="c-orange">${f(a.sl_hit_pct * 100, 1)}%</span></span>
+          <span>Moy PnL: <span class="${pnlColor}">${f(a.avg_pnl, 4)}</span></span>
         </div>
-      </div>
-    </div>
+      </div>`;
+  }).join('');
+}
 
-  </div><!-- /wrap -->
+// ─── About — copy wallet ───────────────────────────────────
 
-  <script>
-    const API = 'http://localhost:5000/api'
-    const $ = id => document.getElementById(id)
-    const fmt = (n, d = 2) => parseFloat(n).toFixed(d)
-    const fmtP = n => (n >= 0 ? '+' : '') + fmt(n) + '%'
-    const cc = n => n > 0 ? 'g' : n < 0 ? 'r' : ''
+function copyAddr(btn, addr) {
+  navigator.clipboard.writeText(addr).then(() => {
+    btn.textContent = 'COPIÉ ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'COPY'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {});
+}
 
-    let _currentTab = 'overview'
+// ─── Clock ─────────────────────────────────────────────────
 
-    function show(tab) {
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'))
-      $('page-' + tab).classList.add('active')
-      document.querySelectorAll('.tab')[['overview', 'positions', 'signals', 'trades', 'adapt', 'params'].indexOf(tab)].classList.add('active')
-      _currentTab = tab
-    }
+function startClock() {
+  const el = document.getElementById('clock');
+  setInterval(() => {
+    el.textContent = new Date().toLocaleTimeString('fr-FR');
+  }, 1000);
+}
 
-    function reasonChip(r) {
-      if (r === 'stop_loss') return '<span class="chip csl">SL</span>'
-      if (r === 'take_profit') return '<span class="chip ctp">TP</span>'
-      return '<span class="chip csg">signal</span>'
-    }
+// ─── Tab navigation ────────────────────────────────────────
 
-    function typeChip(t) {
-      return `<span class="chip ${t === 'long' ? 'cl' : 'cs'}">${t}</span>`
-    }
+function initTabs() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + tab).classList.add('active');
+      activeTab = tab;
 
-    async function refreshAll() {
-      try {
-        const [sRes, posRes, sigRes, tRes, aRes, pRes] = await Promise.all([
-          fetch(`${API}/stats`),
-          fetch(`${API}/positions`),
-          fetch(`${API}/signals`),
-          fetch(`${API}/trades`),
-          fetch(`${API}/adapt_log`),
-          fetch(`${API}/params`),
-        ])
-        const [stats, positions, signals, trades, adaptLog, params] = await Promise.all([
-          sRes.json(), posRes.json(), sigRes.json(), tRes.json(), aRes.json(), pRes.json()
-        ])
-
-        updateKPIs(stats)
-        updatePositions(positions)
-        updateSignals(signals)
-        updateTrades(trades)
-        updateAdaptLog(adaptLog)
-        updateParams(params)
-
-        $('h-equity').textContent = fmt(stats.equity) + ' USDT'
-        $('h-ts').textContent = new Date().toLocaleTimeString('fr-BE')
-
-      } catch (e) {
-        $('h-ts').textContent = 'API offline'
-        console.error(e)
+      if (tab === 'charts') {
+        if (!chartsInitialized) {
+          // First visit: tab is now visible, containers have real width
+          chartsInitialized = true;
+          setTimeout(() => renderCharts(), 20);
+        } else {
+          // Already initialized: sync widths (ResizeObserver may have missed)
+          setTimeout(() => {
+            Object.entries(charts).forEach(([sym, c]) => {
+              const el = document.getElementById(`cw-${toBybitSymbol(sym)}`);
+              if (el && el.clientWidth > 0) c.chart.applyOptions({ width: el.clientWidth });
+            });
+          }, 20);
+        }
       }
-    }
+    });
+  });
+}
 
-    function updateKPIs(s) {
-      const eq = $('k-equity')
-      eq.textContent = fmt(s.equity) + ' USDT'
-      eq.className = 'v ' + cc(s.return_pct)
-      $('k-ret').textContent = fmtP(s.return_pct)
+// ─── Trade filters init ────────────────────────────────────
 
-      const pnl = $('k-pnl')
-      pnl.textContent = (s.total_pnl >= 0 ? '+' : '') + fmt(s.total_pnl) + ' USDT'
-      pnl.className = 'v ' + cc(s.total_pnl)
+function initFilters() {
+  document.querySelectorAll('#filtersRow .filter-btn[data-f]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      tradeFilter = btn.dataset.f;
+      symFilter   = 'all';
+      document.querySelectorAll('#filtersRow .filter-btn[data-f]').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#symFilters .filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTrades();
+    });
+  });
+}
 
-      const wr = $('k-wr')
-      wr.textContent = fmt(s.win_rate, 1) + '%'
-      wr.className = 'v ' + (s.win_rate >= 50 ? 'g' : 'r')
-      $('wl').style.width = s.win_rate + '%'
+// ─── Main loop ─────────────────────────────────────────────
 
-      $('k-trades').textContent = s.total_trades
-      $('k-wl').textContent = `${s.wins}W / ${s.losses}L`
+function startLoop() {
+  fetchAll();
+  setInterval(fetchAll, 15000);
+  setInterval(refreshPrices, 10000);
+}
 
-      $('k-pos').textContent = s.open_positions + ' / 5'
-      $('k-dd').textContent = `Drawdown: ${fmt(s.max_drawdown_pct)}%`
+// ─── Init ──────────────────────────────────────────────────
 
-      $('tab-pos-count').textContent = s.open_positions > 0 ? `(${s.open_positions})` : ''
-    }
-
-    function posCardHTML(pos) {
-      const upnlCls = pos.unrealized_pnl >= 0 ? 'g' : 'r'
-      const upnlTxt = (pos.unrealized_pnl >= 0 ? '+' : '') + fmt(pos.unrealized_pnl) + ' USDT'
-      return `<div class="pos-card ${pos.type}">
-    <div><label>Paire</label><div class="val">${pos.symbol.replace('/USDT', '')}</div></div>
-    <div><label>Entrée</label><div class="val">${parseFloat(pos.entry_price).toPrecision(6)}</div></div>
-    <div><label>Actuel</label><div class="val">${parseFloat(pos.current_price).toPrecision(6)}</div></div>
-    <div><label>SL / TP</label><div class="val r" style="font-size:.9rem">${parseFloat(pos.stop_loss).toPrecision(5)}</div><div class="val g" style="font-size:.9rem">${parseFloat(pos.take_profit).toPrecision(5)}</div></div>
-    <div><label>PnL</label><div class="val ${upnlCls}">${upnlTxt}</div></div>
-  </div>`
-    }
-
-    function updatePositions(positions) {
-      const html = positions.length
-        ? positions.map(posCardHTML).join('')
-        : '<p class="m" style="text-align:center;padding:32px;font-size:10px;letter-spacing:3px;">Aucune position ouverte</p>'
-      $('pos-list').innerHTML = html
-      $('pos-full').innerHTML = html
-      $('pos-count-full').textContent = positions.length + ' position(s)'
-    }
-
-    function updateSignals(sigs) {
-      const entries = Object.entries(sigs)
-      $('tab-sig-count').textContent = entries.length > 0 ? `(${entries.length})` : ''
-      $('sig-ts').textContent = entries.length + ' signal(s) ce cycle'
-      if (!entries.length) {
-        $('sig-grid').innerHTML = '<p class="m" style="text-align:center;padding:32px;font-size:10px;letter-spacing:3px;">Aucun signal actif</p>'
-        return
-      }
-      $('sig-grid').innerHTML = entries.map(([sym, sig]) =>
-        `<div class="sig-card">
-      <span class="sym">${sym.replace('/USDT', '')}</span>
-      <span class="badge ${sig === 'long' ? 'bl' : 'bs'}">${sig.toUpperCase()}</span>
-    </div>`
-      ).join('')
-    }
-
-    function tradeRow(t, i, total) {
-      const d = new Date(t.exit_time * 1000).toLocaleString('fr-BE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-      const pnlCls = t.win ? 'g' : 'r'
-      return `<tr>
-    <td class="m">${total - i}</td>
-    <td>${t.symbol.replace('/USDT', '')}</td>
-    <td>${typeChip(t.type)}</td>
-    <td>${parseFloat(t.entry_price).toPrecision(6)}</td>
-    <td>${parseFloat(t.exit_price).toPrecision(6)}</td>
-    <td class="m">${fmt(t.size_usdt)}</td>
-    <td class="${pnlCls}">${t.pnl >= 0 ? '+' : ''}${fmt(t.pnl)}</td>
-    <td class="${pnlCls}">${fmtP(t.pnl_pct)}</td>
-    <td>${reasonChip(t.reason)}</td>
-    <td class="m">${d}</td>
-  </tr>`
-    }
-
-    function updateTrades(trades) {
-      $('all-trade-count').textContent = trades.length + ' trade(s)'
-      if (!trades.length) {
-        $('tb-all').innerHTML = '<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--muted);letter-spacing:3px;font-size:10px;">Aucun trade pour l\'instant</td></tr>'
-        $('tb-recent').innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--muted);letter-spacing:3px;font-size:10px;">Aucun trade pour l\'instant</td></tr>'
-        return
-      }
-      $('tb-all').innerHTML = trades.map((t, i) => tradeRow(t, i, trades.length)).join('')
-      $('tb-recent').innerHTML = trades.slice(0, 20).map((t, i) => {
-        const pnlCls = t.win ? 'g' : 'r'
-        return `<tr>
-      <td>${t.symbol.replace('/USDT', '')}</td>
-      <td>${typeChip(t.type)}</td>
-      <td>${parseFloat(t.entry_price).toPrecision(6)}</td>
-      <td>${parseFloat(t.exit_price).toPrecision(6)}</td>
-      <td class="${pnlCls}">${t.pnl >= 0 ? '+' : ''}${fmt(t.pnl)}</td>
-      <td class="${pnlCls}">${fmtP(t.pnl_pct)}</td>
-      <td>${reasonChip(t.reason)}</td>
-    </tr>`
-      }).join('')
-    }
-
-    function updateAdaptLog(log) {
-      if (!log.length) return
-      $('adapt-log-list').innerHTML = log.map(a => {
-        const d = new Date(a.timestamp * 1000).toLocaleString('fr-BE')
-        let changes = {}
-        try { changes = JSON.parse(a.changes) } catch (e) { }
-        const changesHtml = Object.entries(changes).map(([k, v]) =>
-          `<span class="adapt-change">${k}: ${typeof v.from === 'number' ? v.from.toFixed(4) : v.from} → ${typeof v.to === 'number' ? v.to.toFixed(4) : v.to}</span>`
-        ).join('')
-        return `<div class="adapt-item">
-      <div class="adapt-meta">
-        <span>${a.symbol}</span>
-        <span>WR: ${fmt(a.win_rate * 100, 1)}%</span>
-        <span>PnL moy: ${a.avg_pnl >= 0 ? '+' : ''}${fmt(a.avg_pnl, 4)}</span>
-        <span>SL hit: ${fmt(a.sl_hit_pct * 100, 1)}%</span>
-        <span class="m">${d}</span>
-      </div>
-      ${changesHtml ? `<div class="adapt-changes">${changesHtml}</div>` : '<span style="color:var(--muted);font-size:10px;">Aucun changement — paramètres stables</span>'}
-    </div>`
-      }).join('')
-    }
-
-    function updateParams(params) {
-      if (!params.length) {
-        $('tb-params').innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-size:10px;letter-spacing:3px;">Aucune paire traitée encore</td></tr>'
-        return
-      }
-      const D = { rsi_oversold: 35, rsi_overbought: 65, stop_loss_pct: 0.03, take_profit_pct: 0.06 }
-      $('tb-params').innerHTML = params.map(p => {
-        const diff = k => Math.abs(p[k] - (D[k] || 0)) > 0.001 ? 'params-diff' : ''
-        return `<tr>
-      <td>${p.symbol.replace('/USDT', '')}</td>
-      <td class="${diff('rsi_oversold')}">${fmt(p.rsi_oversold, 1)}</td>
-      <td class="${diff('rsi_overbought')}">${fmt(p.rsi_overbought, 1)}</td>
-      <td>${p.ma_fast}</td>
-      <td>${p.ma_slow}</td>
-      <td class="${diff('stop_loss_pct')}">${fmt(p.stop_loss_pct * 100, 2)}%</td>
-      <td class="${diff('take_profit_pct')}">${fmt(p.take_profit_pct * 100, 2)}%</td>
-      <td>${p.total_adaptations || 0}</td>
-      <td class="m" style="font-size:10px;max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.last_adapt_reason || 'défauts'}</td>
-    </tr>`
-      }).join('')
-    }
-
-    refreshAll()
-    setInterval(refreshAll, 30_000)
-  </script>
+document.addEventListener('DOMContentLoaded', () => {
+  initTabs();
+  initFilters();
+  startClock();
+  startLoop();
+});
+</script>
 </body>
-
 </html>
