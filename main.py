@@ -17,7 +17,17 @@ from paper_broker   import PaperBroker
 from database       import init_db, save_trade, get_params, is_on_cooldown, set_cooldown
 from adaptive       import on_trade_closed
 from api            import start_api, update_state, notify_n8n
-from config         import LOOP_INTERVAL, API_PORT, INITIAL_BALANCE
+from config         import (
+    LOOP_INTERVAL, API_PORT, INITIAL_BALANCE,
+    USE_WEBSOCKET, SIGNAL_TIMEFRAME, CHECK_ON_CANDLE_CLOSE,
+)
+
+try:
+    from ws_manager import init_ws_manager, get_ws_manager
+    _WS_LIB = True
+except ImportError:
+    _WS_LIB = False
+    def get_ws_manager(): return None
 
 # ── Logging ───────────────────────────────────────────────
 logging.basicConfig(
@@ -27,6 +37,32 @@ logging.basicConfig(
 )
 log = logging.getLogger('main')
 SEP = '═' * 65
+
+# ── Globals partagés pour le callback WS ──────────────────
+_broker: PaperBroker | None = None
+_signals: dict = {}
+_signals_lock = threading.Lock()
+
+
+def on_candle_close(symbol: str, candles: list[dict]):
+    """Callback WS déclenché à chaque bougie fermée : gère signaux entrée/sortie."""
+    if _broker is None:
+        return
+    try:
+        ws = get_ws_manager()
+        price = ws.get_price(symbol) if ws else None
+        if not price:
+            return
+        params = get_params(symbol)
+        sig = process_symbol(symbol, price, _broker, params)
+        with _signals_lock:
+            if sig:
+                _signals[symbol] = sig
+            else:
+                _signals.pop(symbol, None)
+    except Exception as e:
+        log.error(f'[WS CB] {symbol}: {e}')
+
 
 def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict) -> str | None:
     """
@@ -104,7 +140,29 @@ def process_symbol(symbol: str, price: float, broker: PaperBroker, params: dict)
 
     return signal
 
+
+def _handle_sltp(sym: str, price: float, broker: PaperBroker):
+    """SL/TP check standalone pour le heartbeat WS."""
+    closed = broker.check_sl_tp(sym, price)
+    if not closed:
+        return
+    save_trade(closed)
+    on_trade_closed(closed)
+    emoji = '✅' if closed['win'] else '❌'
+    log.info(f'  {emoji} {sym} [{closed["reason"].upper()}] {closed["pnl"]:+.4f} USDT ({closed["pnl_pct"]:+.2f}%)')
+    event = 'trade_win' if closed['win'] else 'trade_loss'
+    notify_n8n(event, {
+        'symbol': closed['symbol'], 'pnl': closed['pnl'],
+        'pnl_pct': closed['pnl_pct'], 'reason': closed['reason'],
+    })
+    if closed['reason'] == 'stop_loss':
+        set_cooldown(sym)
+        log.info(f'  ❄️  [{sym}] Cooldown 4h activé après SL')
+
+
 def main():
+    global _broker
+
     log.info(SEP)
     log.info('  🦝  TNK Paper Trading Bot — Multi-paires + Adaptatif')
     log.info(f'  Balance initiale : {INITIAL_BALANCE:,.0f} USDT (paper)')
@@ -113,10 +171,29 @@ def main():
 
     init_db()
     broker = PaperBroker()
+    _broker = broker
 
     # Démarrer Flask en background
     threading.Thread(target=start_api, args=(API_PORT,), daemon=True).start()
     time.sleep(1.5)
+
+    # Récupérer les symboles initiaux
+    initial_prices = get_ticker_prices()
+    if not initial_prices:
+        log.error('Impossible de récupérer les prix initiaux. Arrêt.')
+        return
+    symbols = list(initial_prices.keys())
+
+    # Init WebSocket si activé
+    ws = None
+    if USE_WEBSOCKET and _WS_LIB:
+        try:
+            ws = init_ws_manager(symbols, SIGNAL_TIMEFRAME)
+            ws.register_callback(on_candle_close)
+            log.info(f'[WS] Actif — {len(symbols)} paires | TF: {SIGNAL_TIMEFRAME}m')
+        except Exception as e:
+            log.warning(f'[WS] Echec init ({e}) → retour au polling')
+            ws = None
 
     iteration = 0
 
@@ -126,38 +203,56 @@ def main():
             t_start = time.time()
             log.info(f'[#{iteration}] {SEP[-40:]}')
 
-            # ── 1. Prix de tous les symboles (1 seul appel) ──
-            prices = get_ticker_prices()
-            if not prices:
-                log.warning('Impossible de récupérer les prix. Retry dans 30s.')
-                time.sleep(30)
-                continue
+            if ws:
+                # ── Mode WebSocket : heartbeat SL/TP + dashboard ──
+                ws_prices = {s: ws.get_price(s) for s in symbols if ws.get_price(s)}
+                if not ws_prices:
+                    log.warning('[WS] Aucun prix disponible, attente...')
+                    time.sleep(30)
+                    continue
 
-            symbols = list(prices.keys())
-            log.info(f'  {len(symbols)} paires actives | {len(broker.positions)} positions ouvertes')
+                prices = ws_prices
+                log.info(f'  ⚡ WS | {len(prices)} prix | {len(broker.positions)} positions ouvertes')
 
-            # ── 2. Traitement parallèle des symboles ──────────
-            signals = {}
+                # SL/TP sur les positions ouvertes (signaux gérés par on_candle_close)
+                for sym, price in list(prices.items()):
+                    if sym in broker.positions:
+                        _handle_sltp(sym, price, broker)
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-                futures = {}
-                for sym in symbols:
-                    p = prices.get(sym)
-                    if p is None:
-                        continue
-                    params = get_params(sym)
-                    futures[executor.submit(process_symbol, sym, p, broker, params)] = sym
+                with _signals_lock:
+                    sigs = dict(_signals)
 
-                for fut in concurrent.futures.as_completed(futures):
-                    sym = futures[fut]
-                    try:
-                        sig = fut.result()
-                        if sig:
-                            signals[sym] = sig
-                    except Exception as e:
-                        log.error(f'  [{sym}] Erreur: {e}')
+            else:
+                # ── Mode Polling : comportement original ──────────
+                prices = get_ticker_prices()
+                if not prices:
+                    log.warning('Impossible de récupérer les prix. Retry dans 30s.')
+                    time.sleep(30)
+                    continue
 
-            # ── 3. Stats ──────────────────────────────────────
+                symbols = list(prices.keys())
+                log.info(f'  {len(symbols)} paires actives | {len(broker.positions)} positions ouvertes')
+
+                sigs = {}
+                with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                    futures = {}
+                    for sym in symbols:
+                        p = prices.get(sym)
+                        if p is None:
+                            continue
+                        params = get_params(sym)
+                        futures[executor.submit(process_symbol, sym, p, broker, params)] = sym
+
+                    for fut in concurrent.futures.as_completed(futures):
+                        sym = futures[fut]
+                        try:
+                            sig = fut.result()
+                            if sig:
+                                sigs[sym] = sig
+                        except Exception as e:
+                            log.error(f'  [{sym}] Erreur: {e}')
+
+            # ── Stats + dashboard (les deux modes) ────────────────
             stats = broker.get_stats(prices)
             log.info(
                 f'  💰 Equity: {stats["equity"]:.2f} USDT  |  '
@@ -167,20 +262,21 @@ def main():
                 f'DD: {stats["max_drawdown_pct"]:.2f}%'
             )
 
-            if signals:
-                log.info(f'  📡 Signaux: {signals}')
+            if sigs:
+                log.info(f'  📡 Signaux: {sigs}')
 
-            # ── 4. Update dashboard ───────────────────────────
-            update_state(broker, prices, signals)
+            update_state(broker, prices, sigs)
 
             elapsed = time.time() - t_start
             wait    = max(0, LOOP_INTERVAL - elapsed)
-            log.info(f'  Traitement: {elapsed:.1f}s | Prochain check dans {wait:.0f}s')
-
+            mode_str = '⚡ WS heartbeat' if ws else '🔄 Polling'
+            log.info(f'  {mode_str} | Traitement: {elapsed:.1f}s | Prochain check dans {wait:.0f}s')
             time.sleep(wait)
 
         except KeyboardInterrupt:
             log.info('Bot arrêté.')
+            if ws:
+                ws.stop()
             break
         except Exception as e:
             log.error(f'Erreur critique: {e}', exc_info=True)

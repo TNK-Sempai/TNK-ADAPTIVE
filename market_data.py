@@ -5,19 +5,42 @@
 import pandas as pd
 import logging
 from symbol_manager import exchange
-from config import TIMEFRAME, OHLCV_LIMIT, ATR_PERIOD, MIN_ATR_PCT, MA200_FILTER
+from config import TIMEFRAME, OHLCV_LIMIT, ATR_PERIOD, MIN_ATR_PCT, MA200_FILTER, USE_WEBSOCKET, SIGNAL_TIMEFRAME
+
+try:
+    from ws_manager import get_ws_manager as _get_ws_manager
+    _WS_AVAILABLE = True
+except ImportError:
+    _get_ws_manager = lambda: None
+    _WS_AVAILABLE = False
 
 log = logging.getLogger('market')
 
+_TF_MAP = {
+    '1': '1m', '3': '3m', '5': '5m', '15': '15m',
+    '30': '30m', '60': '1h', '240': '4h', '1440': '1d',
+}
+
+def get_timeframe_str() -> str:
+    return _TF_MAP.get(SIGNAL_TIMEFRAME, TIMEFRAME)
+
 def fetch_ohlcv(symbol: str) -> pd.DataFrame | None:
+    if USE_WEBSOCKET and _WS_AVAILABLE:
+        ws = _get_ws_manager()
+        if ws and ws.is_ready(symbol):
+            candles = ws.get_candles(symbol)
+            if candles and len(candles) >= 30:
+                df = pd.DataFrame(candles)
+                df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+                return df.set_index('timestamp')
     try:
-        raw = exchange.fetch_ohlcv(symbol, TIMEFRAME, limit=OHLCV_LIMIT)
+        tf = get_timeframe_str()
+        raw = exchange.fetch_ohlcv(symbol, tf, limit=OHLCV_LIMIT)
         if not raw or len(raw) < 30:
             return None
         df = pd.DataFrame(raw, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
-        df = df.set_index('timestamp')
-        return df
+        return df.set_index('timestamp')
     except Exception as e:
         log.warning(f'[{symbol}] OHLCV error: {e}')
         return None

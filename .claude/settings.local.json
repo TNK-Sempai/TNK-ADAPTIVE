@@ -3,7 +3,8 @@
     "allow": [
       "PowerShell(\\(Get-Content \"c:\\\\Users\\\\belet\\\\Desktop\\\\bot trade\\\\dashboard\\\\index.html\" -Raw\\).Substring\\(0,100\\).Length)",
       "PowerShell(\\(Get-Item \"c:\\\\Users\\\\belet\\\\Desktop\\\\bot trade\\\\index.html\"\\).Length)",
-      "Bash(powershell -Command \"Get-Content 'c:\\\\Users\\\\belet\\\\Desktop\\\\bot trade\\\\index.html' | Select-Object -Index \\(166..292\\) | Out-String\")"
+      "Bash(powershell -Command \"Get-Content 'c:\\\\Users\\\\belet\\\\Desktop\\\\bot trade\\\\index.html' | Select-Object -Index \\(166..292\\) | Out-String\")",
+      "Bash(pip install *)"
     ]
   }
 }

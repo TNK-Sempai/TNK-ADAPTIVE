@@ -52,6 +52,13 @@ MIN_ATR_PCT = 0.8  # Volatilité minimum 0.8% par bougie pour entrer
 # ── Filtre tendance MA200 ───────────────────────────────────
 MA200_FILTER = True  # False pour désactiver sans toucher au code
 
+# ── WebSocket ──────────────────────────────────────────────
+USE_WEBSOCKET         = True   # False = retour au polling immédiat
+WS_PING_INTERVAL      = 20     # secondes entre pings keepalive
+WS_RECONNECT_DELAY    = 5      # secondes avant reconnexion auto
+SIGNAL_TIMEFRAME      = '15'   # minutes : '1','3','5','15','30','60','240'
+CHECK_ON_CANDLE_CLOSE = True   # Vérifie les signaux à chaque bougie fermée
+
 # ── Notifications n8n ─────────────────────────────────────
 N8N_WEBHOOK_URL = ''  # URL du webhook n8n, vide = désactivé
 
