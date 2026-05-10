@@ -18,7 +18,7 @@ from database       import init_db, save_trade, get_params, is_on_cooldown, set_
 from adaptive       import on_trade_closed
 from api            import start_api, update_state, notify_n8n
 from config         import (
-    LOOP_INTERVAL, API_PORT, INITIAL_BALANCE,
+    LOOP_INTERVAL, SLTP_INTERVAL, API_PORT, INITIAL_BALANCE,
     USE_WEBSOCKET, SIGNAL_TIMEFRAME, CHECK_ON_CANDLE_CLOSE,
 )
 
@@ -196,34 +196,63 @@ def main():
             ws = None
 
     iteration = 0
+    last_sltp_check = 0
+    last_heartbeat_log = 0
+    prices = {}
 
     while True:
         try:
-            iteration += 1
-            t_start = time.time()
-            log.info(f'[#{iteration}] {SEP[-40:]}')
+            now = time.time()
 
             if ws:
-                # ── Mode WebSocket : heartbeat SL/TP + dashboard ──
-                ws_prices = {s: ws.get_price(s) for s in symbols if ws.get_price(s)}
-                if not ws_prices:
-                    log.warning('[WS] Aucun prix disponible, attente...')
-                    time.sleep(30)
-                    continue
+                # ── Mode WebSocket : boucle rapide, SL/TP toutes les SLTP_INTERVAL ──
 
-                prices = ws_prices
-                log.info(f'  ⚡ WS | {len(prices)} prix | {len(broker.positions)} positions ouvertes')
+                # Check SL/TP + update dashboard toutes les SLTP_INTERVAL (15s)
+                if now - last_sltp_check >= SLTP_INTERVAL:
+                    ws_prices = {s: ws.get_price(s) for s in symbols if ws.get_price(s)}
+                    if not ws_prices:
+                        log.warning('[WS] Aucun prix disponible, attente...')
+                    else:
+                        prices = ws_prices
+                        for sym in list(broker.positions.keys()):
+                            price = ws.get_price(sym) or prices.get(sym)
+                            if price:
+                                _handle_sltp(sym, price, broker)
+                        with _signals_lock:
+                            sigs = dict(_signals)
+                        update_state(broker, prices, sigs)
+                    last_sltp_check = now
 
-                # SL/TP sur les positions ouvertes (signaux gérés par on_candle_close)
-                for sym, price in list(prices.items()):
-                    if sym in broker.positions:
-                        _handle_sltp(sym, price, broker)
+                # Heartbeat log toutes les LOOP_INTERVAL (60s)
+                if now - last_heartbeat_log >= LOOP_INTERVAL:
+                    iteration += 1
+                    ws_prices = {s: ws.get_price(s) for s in symbols if ws.get_price(s)}
+                    if ws_prices:
+                        prices = ws_prices
+                    with _signals_lock:
+                        sigs = dict(_signals)
+                    stats = broker.get_stats(prices)
+                    log.info(f'[#{iteration}] {SEP[-40:]}')
+                    log.info(f'  ⚡ WS | {len(prices)} prix | {len(broker.positions)} positions ouvertes')
+                    log.info(
+                        f'  💰 Equity: {stats["equity"]:.2f} USDT  |  '
+                        f'Rendement: {stats["return_pct"]:+.2f}%  |  '
+                        f'Trades: {stats["total_trades"]}  |  '
+                        f'WR: {stats["win_rate"]:.1f}%  |  '
+                        f'DD: {stats["max_drawdown_pct"]:.2f}%'
+                    )
+                    if sigs:
+                        log.info(f'  📡 Signaux: {sigs}')
+                    last_heartbeat_log = now
 
-                with _signals_lock:
-                    sigs = dict(_signals)
+                time.sleep(5)
 
             else:
                 # ── Mode Polling : comportement original ──────────
+                iteration += 1
+                t_start = time.time()
+                log.info(f'[#{iteration}] {SEP[-40:]}')
+
                 prices = get_ticker_prices()
                 if not prices:
                     log.warning('Impossible de récupérer les prix. Retry dans 30s.')
@@ -252,26 +281,25 @@ def main():
                         except Exception as e:
                             log.error(f'  [{sym}] Erreur: {e}')
 
-            # ── Stats + dashboard (les deux modes) ────────────────
-            stats = broker.get_stats(prices)
-            log.info(
-                f'  💰 Equity: {stats["equity"]:.2f} USDT  |  '
-                f'Rendement: {stats["return_pct"]:+.2f}%  |  '
-                f'Trades: {stats["total_trades"]}  |  '
-                f'WR: {stats["win_rate"]:.1f}%  |  '
-                f'DD: {stats["max_drawdown_pct"]:.2f}%'
-            )
+                # ── Stats + dashboard (mode Polling) ──────────────
+                stats = broker.get_stats(prices)
+                log.info(
+                    f'  💰 Equity: {stats["equity"]:.2f} USDT  |  '
+                    f'Rendement: {stats["return_pct"]:+.2f}%  |  '
+                    f'Trades: {stats["total_trades"]}  |  '
+                    f'WR: {stats["win_rate"]:.1f}%  |  '
+                    f'DD: {stats["max_drawdown_pct"]:.2f}%'
+                )
 
-            if sigs:
-                log.info(f'  📡 Signaux: {sigs}')
+                if sigs:
+                    log.info(f'  📡 Signaux: {sigs}')
 
-            update_state(broker, prices, sigs)
+                update_state(broker, prices, sigs)
 
-            elapsed = time.time() - t_start
-            wait    = max(0, LOOP_INTERVAL - elapsed)
-            mode_str = '⚡ WS heartbeat' if ws else '🔄 Polling'
-            log.info(f'  {mode_str} | Traitement: {elapsed:.1f}s | Prochain check dans {wait:.0f}s')
-            time.sleep(wait)
+                elapsed = time.time() - t_start
+                wait    = max(0, LOOP_INTERVAL - elapsed)
+                log.info(f'  🔄 Polling | Traitement: {elapsed:.1f}s | Prochain check dans {wait:.0f}s')
+                time.sleep(wait)
 
         except KeyboardInterrupt:
             log.info('Bot arrêté.')

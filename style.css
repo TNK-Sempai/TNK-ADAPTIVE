@@ -845,6 +845,36 @@
      letter-spacing: 2px;
  }
 
+ /* ── Chart TF buttons ── */
+ .chart-tf-btns {
+     display: flex;
+     gap: 2px;
+ }
+
+ .tf-btn {
+     font-family: 'JetBrains Mono', monospace;
+     font-size: 8px;
+     letter-spacing: 1px;
+     padding: 3px 7px;
+     border: 1px solid var(--border);
+     background: none;
+     color: var(--muted);
+     cursor: pointer;
+     transition: all .15s;
+     text-transform: uppercase;
+ }
+
+ .tf-btn:hover {
+     border-color: rgba(200,240,96,.4);
+     color: var(--text);
+ }
+
+ .tf-btn.active {
+     border-color: var(--lime);
+     color: var(--lime);
+     background: rgba(200,240,96,.06);
+ }
+
  .chart-wrap {
      height: 280px;
      position: relative;

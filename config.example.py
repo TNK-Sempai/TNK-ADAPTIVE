@@ -1,5 +1,7 @@
 # ═══════════════════════════════════════════════════════════
-#  config.py — Paramètres globaux (défauts adaptatifs inclus)
+#  config.example.py — Copiez ce fichier en config.py
+#  et adaptez les valeurs avant de lancer le bot.
+#  Ne committez JAMAIS config.py (il est dans .gitignore).
 # ═══════════════════════════════════════════════════════════
 
 # ── Exchange ───────────────────────────────────────────────
@@ -14,7 +16,7 @@ SYMBOL_REFRESH_MIN = 60        # Rafraîchir la liste des paires toutes les 60 m
 
 # ── Portfolio paper ────────────────────────────────────────
 INITIAL_BALANCE    = 200.0  # USDT fictif de départ
-MAX_OPEN_POSITIONS = 8         # Pas plus de 5 trades simultanés
+MAX_OPEN_POSITIONS = 8         # Pas plus de 8 trades simultanés
 TRADE_SIZE_PCT     = 0.05      # 5% du portfolio par trade
 
 # ── Paramètres par défaut (avant adaptation) ──────────────
@@ -60,13 +62,13 @@ SIGNAL_TIMEFRAME      = '15'   # minutes : '1','3','5','15','30','60','240'
 CHECK_ON_CANDLE_CLOSE = True   # Vérifie les signaux à chaque bougie fermée
 
 # ── Notifications n8n ─────────────────────────────────────
-N8N_WEBHOOK_URL = ''  # URL du webhook n8n, vide = désactivé
+N8N_WEBHOOK_URL = ''  # Optionnel — URL de votre webhook n8n
 
 # ── Bot ────────────────────────────────────────────────────
-LOOP_INTERVAL   = 60   # Signaux : toutes les 5 min
-SLTP_INTERVAL   = 15    # SL/TP : toutes les 30 secondes
+LOOP_INTERVAL   = 60   # Signaux : toutes les 60 secondes
+SLTP_INTERVAL   = 15   # SL/TP : toutes les 15 secondes
 API_PORT        = 5000
-OHLCV_LIMIT     = 220   # Nombre de bougies à récupérer par paire (220 pour MA200)
-N8N_WEBHOOK_URL = 'http://localhost:5678/webhook-test/af7b6b50-6d24-48af-b00d-c07b2935a87f'
+OHLCV_LIMIT     = 220  # Nombre de bougies à récupérer par paire (220 pour MA200)
+
 # ── Admin ────────────────────────────────────────────────
-ADMIN_TOKEN = 'TNK_SUPER_SECRET_458921'
+ADMIN_TOKEN = 'CHANGE_ME_SECRET_TOKEN'

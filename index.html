@@ -539,6 +539,10 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
     // ═══════════════════════════════════════════════════════════
 
     const API = ''; // dashboard servi par Flask → URLs relatives
+    const ADMIN_TOKEN = 'TNK_SUPER_SECRET_458921';
+    const IS_ADMIN = window.location.hostname === 'localhost'
+                  || window.location.hostname === '127.0.0.1'
+                  || window.location.hostname === '192.168.129.100';
 
     const state = {
       stats: null,
@@ -852,10 +856,12 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
       <span class="pos-timer" data-timer="${pos.symbol}">—</span>
       <span>${ts2date(pos.entry_time)}</span>
     </div>
+    ${IS_ADMIN ? `
     <div class="pos-actions">
       <button class="pos-action-btn add" onclick="addToPosition('${pos.symbol}')">+ MISE</button>
       <button class="pos-action-btn close" onclick="forceClose('${pos.symbol}')">FERMER</button>
     </div>
+    ` : ''}
   `;
     }
 
@@ -965,6 +971,17 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
 
     // ─── Charts ────────────────────────────────────────────────
 
+    function getPriceDecimals(price) {
+      if (!price || price <= 0) return 4;
+      if (price >= 10000) return 2;
+      if (price >= 1000)  return 2;
+      if (price >= 100)   return 3;
+      if (price >= 1)     return 4;
+      if (price >= 0.1)   return 5;
+      if (price >= 0.01)  return 6;
+      return 8;
+    }
+
     function renderCharts() {
       const grid = document.getElementById('chartsGrid');
 
@@ -1010,7 +1027,13 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
       </div>
       <div style="text-align:right">
         <div class="chart-cur-price" data-cprice="${pos.symbol}">${fp(pos.current_price)}</div>
-        <div class="chart-tf">1H</div>
+        <div class="chart-tf-btns" data-chart-tf="${pos.symbol}">
+          <button class="tf-btn" data-tf="1" data-sym="${pos.symbol}" onclick="changeTimeframe('${pos.symbol}', this.dataset.tf)">1m</button>
+          <button class="tf-btn" data-tf="5" data-sym="${pos.symbol}" onclick="changeTimeframe('${pos.symbol}', this.dataset.tf)">5m</button>
+          <button class="tf-btn active" data-tf="60" data-sym="${pos.symbol}" onclick="changeTimeframe('${pos.symbol}', this.dataset.tf)">1h</button>
+          <button class="tf-btn" data-tf="240" data-sym="${pos.symbol}" onclick="changeTimeframe('${pos.symbol}', this.dataset.tf)">4h</button>
+          <button class="tf-btn" data-tf="D" data-sym="${pos.symbol}" onclick="changeTimeframe('${pos.symbol}', this.dataset.tf)">1D</button>
+        </div>
       </div>
     </div>
     <div class="chart-wrap" id="cw-${toBybitSymbol(pos.symbol)}"></div>
@@ -1060,6 +1083,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
         handleScale: true,
       });
 
+      const dec = getPriceDecimals(pos.entry_price);
       const series = chart.addSeries(LightweightCharts.CandlestickSeries, {
         upColor: '#3ddc84',
         downColor: '#ff4f4f',
@@ -1067,11 +1091,16 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
         borderDownColor: '#ff4f4f',
         wickUpColor: '#3ddc84',
         wickDownColor: '#ff4f4f',
+        priceFormat: {
+          type: 'price',
+          precision: dec,
+          minMove: Math.pow(10, -dec),
+        },
       });
 
-      series.createPriceLine({ price: pos.entry_price, color: '#c8f060', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid, title: 'ENTRY', axisLabelVisible: true });
-      series.createPriceLine({ price: pos.stop_loss, color: '#ff4f4f', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'SL', axisLabelVisible: true });
-      series.createPriceLine({ price: pos.take_profit, color: '#3ddc84', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'TP', axisLabelVisible: true });
+      series.createPriceLine({ price: pos.entry_price, color: '#c8f060', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Solid, title: `ENTRY ${pos.entry_price.toFixed(dec)}`, axisLabelVisible: true });
+      series.createPriceLine({ price: pos.stop_loss, color: '#ff4f4f', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: `SL ${pos.stop_loss.toFixed(dec)}`, axisLabelVisible: true });
+      series.createPriceLine({ price: pos.take_profit, color: '#3ddc84', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: `TP ${pos.take_profit.toFixed(dec)}`, axisLabelVisible: true });
 
       charts[pos.symbol] = { chart, series };
 
@@ -1119,7 +1148,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
         try {
           const clean = toBybitSymbol(sym);
           const cat = c.category || 'linear';
-          const url = `/proxy/kline?category=${cat}&symbol=${clean}&interval=60&limit=2`;
+          const url = `/proxy/kline?category=${cat}&symbol=${clean}&interval=${c.timeframe || 60}&limit=2`;
           const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
           const data = await res.json();
           const k = data.result?.list?.[0];
@@ -1138,6 +1167,36 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
     function destroyAllCharts() {
       Object.values(charts).forEach(c => { try { c.chart.remove(); } catch (e) { } });
       charts = {};
+    }
+
+    async function changeTimeframe(sym, tf) {
+      document.querySelectorAll(`[data-chart-tf="${sym}"] .tf-btn`)
+        .forEach(b => b.classList.toggle('active', b.dataset.tf === String(tf)));
+
+      const c = charts[sym];
+      if (!c) return;
+
+      c.timeframe = tf;
+
+      const clean = toBybitSymbol(sym);
+      const cat = c.category || 'linear';
+      const url = `/proxy/kline?category=${cat}&symbol=${clean}&interval=${tf}&limit=100`;
+      try {
+        const res  = await fetch(url);
+        const data = await res.json();
+        const list = data.result?.list;
+        if (!list?.length) return;
+        const candles = list.reverse().map(k => ({
+          time:  parseInt(k[0]) / 1000,
+          open:  parseFloat(k[1]),
+          high:  parseFloat(k[2]),
+          low:   parseFloat(k[3]),
+          close: parseFloat(k[4]),
+        }));
+        c.series.setData(candles);
+      } catch (e) {
+        console.error('[TNK] changeTimeframe error:', e);
+      }
     }
 
     // ─── Ticker ────────────────────────────────────────────────
@@ -1185,7 +1244,7 @@ BYBIT_API_SECRET = os.getenv('BYBIT_API_SECRET', '')</pre>
 
     function renderMiniTrades() {
       const tbody = document.getElementById('miniTradesBody');
-      const recent = [...state.trades].reverse().slice(0, 5);
+      const recent = [...state.trades].slice(0, 5);
       if (!recent.length) {
         tbody.innerHTML = '<tr><td colspan="9" class="c-muted" style="text-align:center;padding:24px">AUCUN TRADE</td></tr>';
         return;
